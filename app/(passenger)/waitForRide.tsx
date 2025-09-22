@@ -1,3 +1,4 @@
+import { useTheme } from "@/contexts/ThemeContext";
 import { db } from "@/lib/firebaseConfig";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { Image } from "expo-image";
@@ -26,6 +27,7 @@ import {
 export default function WaitForRide() {
   const router = useRouter();
   const params = useLocalSearchParams();
+  const { theme, darkMode } = useTheme(); // Get theme from context
   const rideId = Array.isArray(params.rideId)
     ? params.rideId[0]
     : params.rideId;
@@ -51,8 +53,6 @@ export default function WaitForRide() {
           setRide(data);
           setStatus(data.status);
 
-          
-
           // Fetch rider details if assigned
           if (data.riderId) {
             try {
@@ -64,7 +64,6 @@ export default function WaitForRide() {
               console.error("Error fetching rider:", error);
             }
           }
-
 
           // navigate to rideInProgress Screen
           if (data.status === "picked_up") {
@@ -141,14 +140,14 @@ export default function WaitForRide() {
 
   if (error) {
     return (
-      <View style={styles.errorContainer}>
-        <Ionicons name="alert-circle" size={48} color="#ff3b30" />
-        <Text style={styles.errorText}>{error}</Text>
+      <View style={[styles.errorContainer, { backgroundColor: theme.background }]}>
+        <Ionicons name="alert-circle" size={48} color={theme.danger} />
+        <Text style={[styles.errorText, { color: theme.text }]}>{error}</Text>
         <TouchableOpacity
-          style={styles.backButton}
+          style={[styles.backButton, { backgroundColor: theme.primary }]}
           onPress={() => router.back()}
         >
-          <Text style={styles.backButtonText}>Go Back</Text>
+          <Text style={[styles.backButtonText, { color: theme.primaryText }]}>Go Back</Text>
         </TouchableOpacity>
       </View>
     );
@@ -156,20 +155,20 @@ export default function WaitForRide() {
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#7500fc" />
-        <Text style={styles.loadingText}>Loading ride details...</Text>
+      <View style={[styles.loadingContainer, { backgroundColor: theme.background }]}>
+        <ActivityIndicator size="large" color={theme.primary} />
+        <Text style={[styles.loadingText, { color: theme.text }]}>Loading ride details...</Text>
       </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+      <StatusBar barStyle={darkMode ? "light-content" : "dark-content"} backgroundColor={theme.background} />
 
       {/* Map Placeholder */}
-      <View style={styles.mapPlaceholder}>
-        <Text style={styles.mapText}>
+      <View style={[styles.mapPlaceholder, { backgroundColor: theme.card }]}>
+        <Text style={[styles.mapText, { color: theme.text }]}>
           {status === "pending"
             ? "🔍 Searching for drivers..."
             : status === "accepted"
@@ -180,11 +179,11 @@ export default function WaitForRide() {
 
       {/* PENDING STATE */}
       {status === "pending" && (
-        <View style={styles.card}>
-          <ActivityIndicator size="large" color="#7500fc" />
-          <Text style={styles.title}>Looking for a Rider...</Text>
-          <Text style={styles.subtitle}>
-            We're finding the best driver for you
+        <View style={[styles.card, { backgroundColor: theme.card }]}>
+          <ActivityIndicator size="large" color={theme.primary} />
+          <Text style={[styles.title, { color: theme.text }]}>Looking for a Rider...</Text>
+          <Text style={[styles.subtitle, { color: theme.muted }]}>
+            We're finding the best Rider for you
           </Text>
 
           {/* Ride Details */}
@@ -193,9 +192,9 @@ export default function WaitForRide() {
               style={styles.row}
               onPress={() => ride?.pickup && openMaps(ride.pickup)}
             >
-              <Ionicons name="location-outline" size={20} color="#7500fc" />
-              <Text style={styles.label}>Pickup:</Text>
-              <Text style={styles.value} numberOfLines={2}>
+              <Ionicons name="location-outline" size={20} color={theme.primary} />
+              <Text style={[styles.label, { color: theme.muted }]}>Pickup:</Text>
+              <Text style={[styles.value, { color: theme.text }]} numberOfLines={2}>
                 {ride?.pickup?.address || ride?.pickup || "Current location"}
               </Text>
             </TouchableOpacity>
@@ -204,32 +203,35 @@ export default function WaitForRide() {
               style={styles.row}
               onPress={() => ride?.destination && openMaps(ride.destination)}
             >
-              <Ionicons name="flag-outline" size={20} color="#7500fc" />
-              <Text style={styles.label}>Destination:</Text>
-              <Text style={styles.value} numberOfLines={2}>
+              <Ionicons name="flag-outline" size={20} color={theme.primary} />
+              <Text style={[styles.label, { color: theme.muted }]}>Destination:</Text>
+              <Text style={[styles.value, { color: theme.text }]} numberOfLines={2}>
                 {ride?.destination?.address || ride?.dropoff || "Loading..."}
               </Text>
             </TouchableOpacity>
           </View>
 
           {/* Cancel Ride Button */}
-          <TouchableOpacity style={styles.cancelBtn} onPress={cancelRide}>
-            <Text style={styles.cancelText}>Cancel Ride</Text>
+          <TouchableOpacity 
+            style={[styles.cancelBtn, { borderColor: theme.danger }]} 
+            onPress={cancelRide}
+          >
+            <Text style={[styles.cancelText, { color: theme.danger }]}>Cancel Ride</Text>
           </TouchableOpacity>
         </View>
       )}
 
       {/* ACCEPTED STATE */}
       {status === "accepted" && ride && (
-        <View style={styles.card}>
+        <View style={[styles.card, { backgroundColor: theme.card }]}>
           {/* Driver Header */}
-          <View style={styles.sectionHeader}>
-            <Ionicons name="car-sport" size={24} color="#7500fc" />
-            <Text style={styles.sectionTitle}>Driver Assigned</Text>
+          <View style={[styles.sectionHeader, { backgroundColor: theme.background, borderColor: theme.border }]}>
+            <Ionicons name="car-sport" size={24} color={theme.primary} />
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>Driver Assigned</Text>
           </View>
 
           {/* Driver Row */}
-          <View style={styles.driverRow}>
+          <View style={[styles.driverRow, { backgroundColor: theme.primary + "20" }]}>
             <Image
               source={
                 ride.riderInfo?.profilePicture || rider?.profilePicture
@@ -243,12 +245,12 @@ export default function WaitForRide() {
               contentFit="cover"
             />
             <View style={styles.driverInfo}>
-              <Text style={styles.driverName}>
+              <Text style={[styles.driverName, { color: theme.text }]}>
                 {ride.riderInfo?.name || rider?.name || "Driver"}
               </Text>
-              <Text style={styles.driverRating}>
+              <Text style={[styles.driverRating, { color: theme.muted }]}>
                 ⭐ {rider?.rating?.toFixed(1) || "4.8"} (
-                {rider?.totalRides || "200"} rides)
+                {rider?.totalRides || "0"} rides)
               </Text>
             </View>
             {ride.riderInfo?.phone && (
@@ -256,7 +258,7 @@ export default function WaitForRide() {
                 style={styles.callButton}
                 onPress={() => callDriver(ride.riderInfo.phone)}
               >
-                <Ionicons name="call-outline" size={28} color="#7500fc" />
+                <Ionicons name="call-outline" size={28} color={theme.primary} />
               </TouchableOpacity>
             )}
           </View>
@@ -264,9 +266,9 @@ export default function WaitForRide() {
           {/* Vehicle Info */}
           <View style={styles.section}>
             <View style={styles.row}>
-              <Ionicons name="car-outline" size={20} color="#7500fc" />
-              <Text style={styles.label}>Vehicle:</Text>
-              <Text style={styles.value}>
+              <Ionicons name="car-outline" size={20} color={theme.primary} />
+              <Text style={[styles.label, { color: theme.muted }]}>Vehicle:</Text>
+              <Text style={[styles.value, { color: theme.text }]}>
                 {ride.riderInfo?.vehicle?.model ||
                   rider?.vehicle?.model ||
                   "Not available"}
@@ -274,9 +276,9 @@ export default function WaitForRide() {
             </View>
 
             <View style={styles.row}>
-              <Ionicons name="pricetag-outline" size={20} color="#7500fc" />
-              <Text style={styles.label}>Color:</Text>
-              <Text style={styles.value}>
+              <Ionicons name="pricetag-outline" size={20} color={theme.primary} />
+              <Text style={[styles.label, { color: theme.muted }]}>Color:</Text>
+              <Text style={[styles.value, { color: theme.text }]}>
                 {ride.riderInfo?.vehicle?.color ||
                   rider?.vehicle?.color ||
                   "N/A"}
@@ -284,9 +286,9 @@ export default function WaitForRide() {
             </View>
 
             <View style={styles.row}>
-              <Ionicons name="document-outline" size={20} color="#7500fc" />
-              <Text style={styles.label}>Plate:</Text>
-              <Text style={styles.value}>
+              <Ionicons name="document-outline" size={20} color={theme.primary} />
+              <Text style={[styles.label, { color: theme.muted }]}>Plate:</Text>
+              <Text style={[styles.value, { color: theme.text }]}>
                 {ride.riderInfo?.vehicle?.plateNumber ||
                   rider?.vehicle?.plateNumber ||
                   "Not available"}
@@ -296,18 +298,18 @@ export default function WaitForRide() {
 
           {/* Trip Details */}
           <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Ionicons name="navigate" size={20} color="#7500fc" />
-              <Text style={styles.sectionTitle}>Trip Details</Text>
+            <View style={[styles.sectionHeader, { backgroundColor: theme.background, borderColor: theme.border }]}>
+              <Ionicons name="navigate" size={20} color={theme.primary} />
+              <Text style={[styles.sectionTitle, { color: theme.text }]}>Trip Details</Text>
             </View>
 
             <TouchableOpacity
               style={styles.row}
               onPress={() => openMaps(ride.pickup?.address || ride.pickup)}
             >
-              <Ionicons name="location-outline" size={20} color="#7500fc" />
-              <Text style={styles.label}>Pickup:</Text>
-              <Text style={styles.value} numberOfLines={2}>
+              <Ionicons name="location-outline" size={20} color={theme.primary} />
+              <Text style={[styles.label, { color: theme.muted }]}>Pickup:</Text>
+              <Text style={[styles.value, { color: theme.text }]} numberOfLines={2}>
                 {ride.pickup?.address || ride.pickup}
               </Text>
             </TouchableOpacity>
@@ -318,32 +320,35 @@ export default function WaitForRide() {
                 openMaps(ride.destination?.address || ride.dropoff)
               }
             >
-              <Ionicons name="flag-outline" size={20} color="#7500fc" />
-              <Text style={styles.label}>Destination:</Text>
-              <Text style={styles.value} numberOfLines={2}>
+              <Ionicons name="flag-outline" size={20} color={theme.primary} />
+              <Text style={[styles.label, { color: theme.muted }]}>Destination:</Text>
+              <Text style={[styles.value, { color: theme.text }]} numberOfLines={2}>
                 {ride.destination?.address || ride.dropoff}
               </Text>
             </TouchableOpacity>
 
             <View style={styles.row}>
-              <Ionicons name="time-outline" size={20} color="#7500fc" />
-              <Text style={styles.label}>ETA:</Text>
-              <Text style={styles.value}>5-10 mins</Text>
+              <Ionicons name="time-outline" size={20} color={theme.primary} />
+              <Text style={[styles.label, { color: theme.muted }]}>ETA:</Text>
+              <Text style={[styles.value, { color: theme.text }]}>5-10 mins</Text>
             </View>
           </View>
 
           {/* Action Buttons */}
           <View style={styles.buttonRow}>
             <TouchableOpacity
-              style={[styles.actionButton, styles.secondaryButton]}
+              style={[styles.actionButton, styles.secondaryButton, { borderColor: theme.primary }]}
               onPress={() => rider?.phone && callDriver(rider.phone)}
             >
-              <Ionicons name="call" size={20} color="#7500fc" />
-              <Text style={styles.secondaryButtonText}>Call Driver</Text>
+              <Ionicons name="call" size={20} color={theme.primary} />
+              <Text style={[styles.secondaryButtonText, { color: theme.primary }]}>Call Driver</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.cancelBtn} onPress={cancelRide}>
-              <Text style={styles.cancelText}>Cancel Ride</Text>
+            <TouchableOpacity 
+              style={[styles.cancelBtn, { borderColor: theme.danger }]} 
+              onPress={cancelRide}
+            >
+              <Text style={[styles.cancelText, { color: theme.danger }]}>Cancel Ride</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -351,20 +356,20 @@ export default function WaitForRide() {
 
       {/* COMPLETED STATE */}
       {status === "completed" && (
-        <View style={styles.card}>
-          <Ionicons name="checkmark-circle" size={48} color="#34c759" />
-          <Text style={styles.title}>Ride Completed!</Text>
-          <Text style={styles.subtitle}>Thank you for riding with us</Text>
-          <Text style={styles.loadingText}>Returning to home screen...</Text>
+        <View style={[styles.card, { backgroundColor: theme.card }]}>
+          <Ionicons name="checkmark-circle" size={48} color={theme.success} />
+          <Text style={[styles.title, { color: theme.text }]}>Ride Completed!</Text>
+          <Text style={[styles.subtitle, { color: theme.muted }]}>Thank you for riding with us</Text>
+          <Text style={[styles.loadingText, { color: theme.muted }]}>Returning to home screen...</Text>
         </View>
       )}
 
       {/* CANCELLED STATE */}
       {status === "cancelled" && (
-        <View style={styles.card}>
-          <Ionicons name="close-circle" size={48} color="#ff3b30" />
-          <Text style={styles.title}>Ride Cancelled</Text>
-          <Text style={styles.loadingText}>Returning to home screen...</Text>
+        <View style={[styles.card, { backgroundColor: theme.card }]}>
+          <Ionicons name="close-circle" size={48} color={theme.danger} />
+          <Text style={[styles.title, { color: theme.text }]}>Ride Cancelled</Text>
+          <Text style={[styles.loadingText, { color: theme.muted }]}>Returning to home screen...</Text>
         </View>
       )}
     </SafeAreaView>
@@ -374,47 +379,41 @@ export default function WaitForRide() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
   },
   errorContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
     padding: 20,
-    backgroundColor: "#fff",
   },
   errorText: {
     fontSize: 16,
-    color: "#ff3b30",
     textAlign: "center",
     marginVertical: 16,
+    fontWeight: "600",
   },
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#fff",
   },
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: "#666",
     textAlign: "center",
   },
   mapPlaceholder: {
     flex: 1,
-    backgroundColor: "#e0e0e0",
     justifyContent: "center",
     alignItems: "center",
   },
   mapText: {
     fontSize: 18,
-    color: "#555",
     textAlign: "center",
     paddingHorizontal: 20,
+    fontWeight: "600",
   },
   card: {
-    backgroundColor: "#fff",
     padding: 20,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
@@ -435,11 +434,9 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     marginVertical: 8,
     textAlign: "center",
-    color: "#333",
   },
   subtitle: {
     fontSize: 16,
-    color: "#666",
     textAlign: "center",
     marginBottom: 16,
   },
@@ -449,19 +446,16 @@ const styles = StyleSheet.create({
   sectionHeader: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#eee",
     paddingHorizontal: 10,
     paddingVertical: 10,
     borderWidth: 1,
-    borderColor: "#ddd",
-    // borderRadius: 8,
+    borderRadius: 8,
     marginBottom: 16,
     gap: 8,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: "600",
-    color: "#333",
   },
   details: {
     width: "100%",
@@ -473,7 +467,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: "#ddd",
+    borderBottomColor: "rgba(0,0,0,0.1)",
   },
   label: {
     fontWeight: "600",
@@ -481,11 +475,9 @@ const styles = StyleSheet.create({
     marginRight: 4,
     fontSize: 14,
     minWidth: 80,
-    color: "#333",
   },
   value: {
     fontSize: 14,
-    color: "#444",
     flex: 1,
     flexWrap: "wrap",
   },
@@ -494,7 +486,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 20,
     padding: 12,
-    backgroundColor: "#f3f0faff",
     borderRadius: 12,
   },
   driverPic: {
@@ -510,11 +501,9 @@ const styles = StyleSheet.create({
   driverName: {
     fontSize: 18,
     fontWeight: "700",
-    color: "#333",
   },
   driverRating: {
     fontSize: 14,
-    color: "#666",
     marginTop: 2,
   },
   callButton: {
@@ -536,11 +525,9 @@ const styles = StyleSheet.create({
   },
   secondaryButton: {
     borderWidth: 1,
-    borderColor: "#7500fc",
     backgroundColor: "transparent",
   },
   secondaryButtonText: {
-    color: "#7500fc",
     fontSize: 16,
     fontWeight: "600",
   },
@@ -548,12 +535,10 @@ const styles = StyleSheet.create({
     padding: 14,
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: "#ff3b30",
     alignItems: "center",
     flex: 1,
   },
   cancelText: {
-    color: "#ff3b30",
     fontSize: 16,
     fontWeight: "600",
   },
@@ -561,11 +546,9 @@ const styles = StyleSheet.create({
     marginTop: 20,
     padding: 14,
     borderRadius: 12,
-    backgroundColor: "#7500fc",
     alignItems: "center",
   },
   backButtonText: {
-    color: "#fff",
     fontSize: 16,
     fontWeight: "600",
   },

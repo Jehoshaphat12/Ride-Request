@@ -91,7 +91,8 @@ export default function RideCompletedScreen() {
         passengerRating: rating,
         passengerFeedback: feedback,
         ratedAt: serverTimestamp(),
-        status: "rated", // Mark as rated
+        isRated: "rated",
+        status: "Completed", // Mark as rated
       });
 
       // Update rider's overall rating
@@ -99,11 +100,13 @@ export default function RideCompletedScreen() {
         const currentRating = rider.rating || 0;
         const totalRatings = rider.totalRatings || 0;
         const newTotalRatings = totalRatings + 1;
+        const newTotalRides = totalRatings + 1;
         const newRating = ((currentRating * totalRatings) + rating) / newTotalRatings;
 
         await updateDoc(doc(db, "users", ride.riderId), {
           rating: newRating,
           totalRatings: newTotalRatings,
+          totalRides: newTotalRides,
           updatedAt: serverTimestamp(),
         });
       }
@@ -257,7 +260,7 @@ export default function RideCompletedScreen() {
               {ride.riderInfo?.name || rider?.name || "Driver"}
             </Text>
             <Text style={[styles.driverRating, { color: darkMode ? "#ccc" : "#666" }]}>
-              ⭐ {rider?.rating?.toFixed(1) || "4.8"} ({rider?.totalRatings || "200"} ratings)
+              ⭐ {rider?.rating?.toFixed(1) || "4.8"} ({rider?.totalRides || "0"} rides)
             </Text>
           </View>
         </View>

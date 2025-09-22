@@ -1,11 +1,15 @@
+import { useTheme } from "@/contexts/ThemeContext";
 import { auth } from "@/lib/firebaseConfig";
+import { getUserProfile } from "@/services/users";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { Image } from "expo-image";
+import { useRouter } from "expo-router";
 import { signOut } from "firebase/auth";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   SafeAreaView,
   ScrollView,
+  StatusBar,
   StyleSheet,
   Switch,
   Text,
@@ -14,47 +18,119 @@ import {
 } from "react-native";
 
 export default function PassengerProfileScreen() {
-  const [darkMode, setDarkMode] = useState(false);
+  const router = useRouter();
+  const { theme, darkMode, toggleDarkMode } = useTheme(); // Get theme from context
+  const [userName, setUserName] = useState("");
+  const [profilePic, setProfilePic] = useState("");
+  const [userEmail, setUserEmail] = useState("");
 
   // Logout function
   const handleLogout = async () => {
-        try {
-          await signOut(auth);
-          console.log('User signed out successfully!');
-          // Navigate the user to the login screen or another appropriate screen
-          // using your navigation library (e.g., React Navigation)
-        } catch (error) {
-          console.error('Error signing out:', error);
-        }
-      };
+    try {
+      await signOut(auth);
+      console.log("User signed out successfully!");
+      router.replace("/"); // Navigate to login screen
+    } catch (error) {
+      console.error("Error signing out:", error);
+    }
+  };
+
+  // Get current user info
+  useEffect(() => {
+    const getUserDetails = async () => {
+      const profile = await getUserProfile();
+
+      if (!profile) return;
+
+      setUserName(profile.userName);
+      setUserEmail(profile.email);
+      setProfilePic(profile.profilePicture);
+    };
+    getUserDetails();
+  }, []);
 
   return (
     <SafeAreaView
-      style={[styles.container, darkMode && { backgroundColor: "#121212" }]}
+      style={[
+        styles.container,
+        { backgroundColor: theme.background },
+      ]}
     >
-      <ScrollView contentContainerStyle={{ padding: 16 }}>
+      <StatusBar
+        barStyle={darkMode ? "light-content" : "dark-content"}
+        backgroundColor={theme.background}
+      />
+
+      {/* Header with Back Button */}
+      <View
+        style={[
+          styles.navheader,
+          {
+            borderBottomColor: theme.border,
+            backgroundColor: theme.card,
+          },
+        ]}
+      >
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => router.back()}
+        >
+          <Ionicons
+            name="arrow-back"
+            size={24}
+            color={theme.text}
+          />
+        </TouchableOpacity>
+        <Text
+          style={[styles.headerTitle, { color: theme.text }]}
+        >
+          Profile & Settings
+        </Text>
+        <View style={styles.headerSpacer} />
+      </View>
+
+      <ScrollView
+        contentContainerStyle={styles.scrollContainer}
+        showsVerticalScrollIndicator={false}
+      >
         {/* Profile Header */}
         <View
           style={[
             styles.header,
-            darkMode && { backgroundColor: "#1e1e1e", borderColor: "#333" },
+            {
+              backgroundColor: theme.card,
+              borderColor: theme.border,
+            },
           ]}
         >
           <Image
-            source={require("../../assets/images/defaultUserImg.png")}
+            source={
+              profilePic
+                ? { uri: profilePic }
+                : require("../../assets/images/defaultUserImg.png")
+            }
             style={styles.profilePic}
+            contentFit="cover"
           />
-          <View style={{ marginLeft: 12 }}>
-            <Text style={[styles.name, darkMode && { color: "#fff" }]}>
-              Ama Boateng
+          <View style={styles.userInfo}>
+            <Text style={[styles.name, { color: theme.text }]}>
+              {userName}
             </Text>
-            <Text style={[styles.vehicle, darkMode && { color: "#aaa" }]}>
+            <Text style={[styles.email, { color: theme.muted }]}>
+              {userEmail}
+            </Text>
+            <Text
+              style={[styles.vehicle, { color: theme.muted }]}
+            >
               Passenger Account
             </Text>
           </View>
-          <TouchableOpacity style={styles.editBtn}>
-            <Ionicons name="create-outline" size={18} color="#fff" />
-            <Text style={styles.editText}>Edit</Text>
+          <TouchableOpacity
+            style={[styles.editBtn, { backgroundColor: theme.primary }]}
+            onPress={() => router.push("/")}
+          >
+            <Ionicons name="create-outline" size={18} color={theme.primaryText} />
+            <Text style={[styles.editText, { color: theme.primaryText }]}>Edit</Text>
           </TouchableOpacity>
         </View>
 
@@ -62,57 +138,148 @@ export default function PassengerProfileScreen() {
         <View
           style={[
             styles.section,
-            darkMode && { backgroundColor: "#1e1e1e", borderColor: "#333" },
+            {
+              backgroundColor: theme.card,
+              borderColor: theme.border,
+            },
           ]}
         >
-          <OptionRow icon="person-outline" label="Account Info" darkMode={darkMode} />
-          <OptionRow icon="time-outline" label="Ride History" darkMode={darkMode} />
-          <OptionRow icon="card-outline" label="Payment Methods" darkMode={darkMode} />
-          <OptionRow icon="help-circle-outline" label="Help & Support" darkMode={darkMode} />
-          <OptionRow icon="notifications-outline" label="Notifications" darkMode={darkMode} />
+          <OptionRow
+            icon="person-outline"
+            label="Account Info"
+            theme={theme}
+            onPress={() => router.push("/")}
+          />
+          <OptionRow
+            icon="time-outline"
+            label="Ride History"
+            theme={theme}
+            onPress={() => router.push("/rideHistory")}
+          />
+          <OptionRow
+            icon="card-outline"
+            label="Payment Methods"
+            theme={theme}
+            onPress={() => router.push("/")}
+          />
+          <OptionRow
+            icon="help-circle-outline"
+            label="Help & Support"
+            theme={theme}
+            onPress={() => router.push("/")}
+          />
+          <OptionRow
+            icon="notifications-outline"
+            label="Notifications"
+            theme={theme}
+            onPress={() => router.push("/")}
+          />
 
           {/* Dark Mode Toggle */}
-          <View style={styles.row}>
-            <Ionicons name="moon-outline" size={22} color="#7500fc" />
-            <Text
-              style={[styles.rowText, darkMode && { color: "#fff" }]}
-            >
-              Dark Mode
-            </Text>
+          <View style={[styles.row, { borderBottomWidth: 0 }]}>
+            <View style={styles.rowContent}>
+              <Ionicons
+                name={darkMode ? "moon" : "moon-outline"}
+                size={22}
+                color={theme.primary}
+              />
+              <Text
+                style={[styles.rowText, { color: theme.text }]}
+              >
+                Dark Mode
+              </Text>
+            </View>
             <Switch
               value={darkMode}
-              onValueChange={setDarkMode}
-              thumbColor={darkMode ? "#7500fc" : "#f4f3f4"}
-              trackColor={{ false: "#ccc", true: "#a580ff" }}
+              onValueChange={toggleDarkMode}
+              thumbColor={darkMode ? theme.primary : "#f4f3f4"}
+              trackColor={{ false: "#767577", true: theme.primary + "80" }} // 80 = 50% opacity
+              ios_backgroundColor="#3e3e3e"
             />
           </View>
         </View>
 
-        {/* Logout */}
-        <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
+        {/* Additional Settings Section */}
+        <View
+          style={[
+            styles.section,
+            {
+              backgroundColor: theme.card,
+              borderColor: theme.border,
+            },
+          ]}
+        >
+          <OptionRow
+            icon="shield-checkmark-outline"
+            label="Privacy & Security"
+            theme={theme}
+            onPress={() => router.push("/")}
+          />
+          <OptionRow
+            icon="language-outline"
+            label="Language"
+            theme={theme}
+            onPress={() => router.push("/")}
+          />
+          <OptionRow
+            icon="information-circle-outline"
+            label="About App"
+            theme={theme}
+            onPress={() => router.push("/")}
+          />
+        </View>
+
+        {/* Logout Button */}
+        <TouchableOpacity
+          style={[
+            styles.logoutBtn,
+            { backgroundColor: theme.danger },
+          ]}
+          onPress={handleLogout}
+        >
           <Ionicons name="log-out-outline" size={22} color="#fff" />
           <Text style={styles.logoutText}>Logout</Text>
         </TouchableOpacity>
+
+        {/* App Version */}
+        <Text
+          style={[styles.versionText, { color: theme.muted }]}
+        >
+          Version 1.0.0
+        </Text>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-// Reusable row
+// Reusable row component
 function OptionRow({
   icon,
   label,
-  darkMode,
+  theme,
+  onPress,
 }: {
-  icon: any;
+  icon: string;
   label: string;
-  darkMode?: boolean;
+  theme: any;
+  onPress?: () => void;
 }) {
   return (
-    <TouchableOpacity style={[styles.row, darkMode && {borderColor: "#333"}]}>
-      <Ionicons name={icon} size={22} color="#7500fc" />
-      <Text style={[styles.rowText, darkMode && { color: "#fff" }]}>{label}</Text>
-      <Ionicons name="chevron-forward" size={20} color={darkMode ? "#aaa" : "#999"} />
+    <TouchableOpacity
+      style={[styles.row, { borderBottomColor: theme.border }]}
+      onPress={onPress}
+    >
+      <View style={styles.rowContent}>
+        <Ionicons name={icon as any} size={22} color={theme.primary} />
+        <Text style={[styles.rowText, { color: theme.text }]}>
+          {label}
+        </Text>
+      </View>
+      <Ionicons
+        name="chevron-forward"
+        size={20}
+        color={theme.muted}
+      />
     </TouchableOpacity>
   );
 }
@@ -120,80 +287,116 @@ function OptionRow({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
+  },
+  scrollContainer: {
+    padding: 16,
+    paddingBottom: 30,
+  },
+  navheader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingVertical: 15,
+    paddingTop: 45,
+    borderBottomWidth: 1,
+  },
+  backButton: {
+    padding: 8,
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+  },
+  headerSpacer: {
+    width: 40,
   },
   header: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#f8f6ff",
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: 16,
+    padding: 20,
     marginBottom: 24,
     borderWidth: 1,
-    borderColor: "#eee",
   },
   profilePic: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    backgroundColor: "#eee",
+  },
+  userInfo: {
+    flex: 1,
+    marginLeft: 16,
   },
   name: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: "700",
-    color: "#333",
+    marginBottom: 2,
+  },
+  email: {
+    fontSize: 14,
+    marginBottom: 2,
   },
   vehicle: {
-    fontSize: 14,
-    color: "#666",
-    marginTop: 4,
+    fontSize: 13,
+    fontStyle: "italic",
   },
   editBtn: {
-    marginLeft: "auto",
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#7500fc",
     paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingVertical: 8,
     borderRadius: 8,
+    marginLeft: 12,
   },
   editText: {
-    color: "#fff",
     marginLeft: 4,
     fontWeight: "600",
+    fontSize: 14,
   },
   section: {
-    backgroundColor: "#fff",
-    borderRadius: 12,
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: "#eee",
-    marginBottom: 24,
+    marginBottom: 20,
+    overflow: "hidden",
   },
   row: {
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "space-between",
     paddingVertical: 16,
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     borderBottomWidth: 1,
-    borderBottomColor: "#eee",
+    minHeight: 56,
+  },
+  rowContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
   },
   rowText: {
-    flex: 1,
     fontSize: 16,
     marginLeft: 12,
-    color: "#333",
+    fontWeight: "500",
   },
   logoutBtn: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#ff3b30",
-    paddingVertical: 14,
+    paddingVertical: 16,
     borderRadius: 12,
+    marginBottom: 20,
   },
   logoutText: {
     color: "#fff",
     fontSize: 16,
     fontWeight: "600",
-    marginLeft: 6,
+    marginLeft: 8,
+  },
+  versionText: {
+    textAlign: "center",
+    fontSize: 12,
+    marginTop: 8,
   },
 });

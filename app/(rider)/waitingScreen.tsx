@@ -4,8 +4,9 @@ import { auth } from "@/lib/firebaseConfig";
 import { getUserProfile } from "@/services/users";
 import { useRouter } from "expo-router";
 import { signOut } from "firebase/auth";
+import LottieView from "lottie-react-native";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import Loader from "../Loader";
 
 export default function WaitingScreen() {
@@ -63,7 +64,17 @@ export default function WaitingScreen() {
         { backgroundColor: darkMode ? "#000" : "#fff" },
       ]}
     >
-      <ActivityIndicator size="large" color={darkMode ? "#fff" : "#7500fc"} />
+      <View style={{width: 500, height: "auto"}}>
+      <LottieView
+        source={require('../../splashScreenAnimations/ProfileScanning.json')}
+        autoPlay
+        resizeMode="contain"
+        loop
+        style={[styles.animation, {width: 20, height: 20}]}
+      />
+
+      </View>
+      {/* <ActivityIndicator size="large" color={darkMode ? "#fff" : "#7500fc"} /> */}
       <Text style={[styles.title, { color: darkMode ? "#fff" : "#000" }]}>
         Your profile is under review
       </Text>
@@ -118,5 +129,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#7500fc",
     fontWeight: "600",
+  },
+  animation: {
+    width: 30,
+    height: 30,
+    overflow: "hidden",
   },
 });

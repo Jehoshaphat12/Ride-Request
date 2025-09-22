@@ -1,9 +1,12 @@
 import { useTheme } from "@/contexts/ThemeContext";
 import { darkTheme } from "@/hooks/theme";
 import { auth } from "@/lib/firebaseConfig";
+import { getUserProfile } from "@/services/users";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { Image } from "expo-image";
+import { useRouter } from "expo-router";
 import { signOut } from "firebase/auth";
+import { useEffect, useState } from "react";
 import {
   SafeAreaView,
   ScrollView,
@@ -15,25 +18,66 @@ import {
 } from "react-native";
 
 export default function RiderProfileScreen() {
-//   const [darkMode, setDarkMode] = useState(false);
-  const {darkMode, toggleDarkMode} = useTheme()
+  //   const [darkMode, setDarkMode] = useState(false);
+  const router = useRouter()
+  const [userName, setUserName] = useState("");
+  const [profilePic, setProfilePic] = useState("");
+  const [vehicleDetails, setVehicleDetails] = useState({
+    model: "",
+    plateNumber: "",
+  });
+  const { darkMode, toggleDarkMode } = useTheme();
+  const userProfile = getUserProfile();
+
+  useEffect(() => {
+    const getUserDetails = async () => {
+      const profile = await getUserProfile();
+
+      if (!profile) return;
+
+      setUserName(profile.name);
+      setProfilePic(profile.profilePicture);
+      setVehicleDetails(profile.vehicle);
+    };
+    getUserDetails();
+  }, []);
 
   // Logout rider function
   const handleLogout = async () => {
-        try {
-          await signOut(auth);
-          console.log('User signed out successfully!');
-          // Navigate the user to the login screen or another appropriate screen
-          // using your navigation library (e.g., React Navigation)
-        } catch (error) {
-          console.error('Error signing out:', error);
-        }
-      };
+    try {
+      await signOut(auth);
+      console.log("User signed out successfully!");
+      // Navigate the user to the login screen or another appropriate screen
+      // using your navigation library (e.g., React Navigation)
+    } catch (error) {
+      console.error("Error signing out:", error);
+    }
+  };
 
   return (
     <SafeAreaView
       style={[styles.container, darkMode && { backgroundColor: "#121212" }]}
     >
+      {/* Header with Back Button */}
+    <View style={styles.navheader}>
+      <TouchableOpacity 
+        style={styles.backButton}
+        onPress={() => router.back()}
+      >
+        <Ionicons 
+          name="arrow-back" 
+          size={24} 
+          color={darkMode ? "#fff" : "#000"} 
+        />
+      </TouchableOpacity>
+      <Text style={[
+        styles.headerTitle, 
+        { color: darkMode ? "#fff" : "#000" }
+      ]}>
+        Settings
+      </Text>
+      <View style={styles.headerSpacer} />
+    </View>
       <ScrollView contentContainerStyle={{ padding: 16 }}>
         {/* Profile Header */}
         <View
@@ -43,15 +87,15 @@ export default function RiderProfileScreen() {
           ]}
         >
           <Image
-            source={require("../../assets/images/defaultUserImg.png")}
+            source={profilePic ? {uri: profilePic} : require("../../assets/images/defaultUserImg.png")}
             style={styles.profilePic}
           />
           <View style={{ marginLeft: 12 }}>
             <Text style={[styles.name, darkMode && { color: "#fff" }]}>
-              Kofi Mensah
+              {userName}
             </Text>
             <Text style={[styles.vehicle, darkMode && { color: "#aaa" }]}>
-              Yamaha MT-15 • AS 543-20
+              {vehicleDetails.model} • {vehicleDetails.plateNumber}
             </Text>
           </View>
           <TouchableOpacity style={styles.editBtn}>
@@ -67,19 +111,37 @@ export default function RiderProfileScreen() {
             darkMode && { backgroundColor: "#1e1e1e", borderColor: "#333" },
           ]}
         >
-          <OptionRow icon="person-outline" label="Account Info" darkMode={darkMode} />
-          <OptionRow icon="bicycle-outline" label="Vehicle Info" darkMode={darkMode} />
-          <OptionRow icon="time-outline" label="Ride History" darkMode={darkMode} />
+          <OptionRow
+            icon="person-outline"
+            label="Account Info"
+            darkMode={darkMode}
+          />
+          <OptionRow
+            icon="bicycle-outline"
+            label="Vehicle Info"
+            darkMode={darkMode}
+          />
+          <OptionRow
+            icon="time-outline"
+            label="Ride History"
+            darkMode={darkMode}
+          />
           <OptionRow icon="cash-outline" label="Earnings" darkMode={darkMode} />
-          <OptionRow icon="wallet-outline" label="Payment Setup" darkMode={darkMode} />
-          <OptionRow icon="help-circle-outline" label="Help & Support" darkMode={darkMode} />
+          <OptionRow
+            icon="wallet-outline"
+            label="Payment Setup"
+            darkMode={darkMode}
+          />
+          <OptionRow
+            icon="help-circle-outline"
+            label="Help & Support"
+            darkMode={darkMode}
+          />
 
           {/* Dark Mode Toggle */}
           <View style={styles.row}>
             <Ionicons name="moon-outline" size={22} color="#7500fc" />
-            <Text
-              style={[styles.rowText, darkMode && { color: "#fff" }]}
-            >
+            <Text style={[styles.rowText, darkMode && { color: "#fff" }]}>
               Dark Mode
             </Text>
             <Switch
@@ -112,10 +174,18 @@ function OptionRow({
   darkMode?: boolean;
 }) {
   return (
-    <TouchableOpacity style={[styles.row, darkMode && {borderColor: darkTheme.border}]}>
+    <TouchableOpacity
+      style={[styles.row, darkMode && { borderColor: darkTheme.border }]}
+    >
       <Ionicons name={icon} size={22} color="#7500fc" />
-      <Text style={[styles.rowText, darkMode && { color: "#fff" }]}>{label}</Text>
-      <Ionicons name="chevron-forward" size={20} color={darkMode ? "#aaa" : "#999"} />
+      <Text style={[styles.rowText, darkMode && { color: "#fff" }]}>
+        {label}
+      </Text>
+      <Ionicons
+        name="chevron-forward"
+        size={20}
+        color={darkMode ? "#aaa" : "#999"}
+      />
     </TouchableOpacity>
   );
 }
@@ -146,7 +216,7 @@ const styles = StyleSheet.create({
     color: "#333",
   },
   vehicle: {
-    fontSize: 14,
+    fontSize: 12,
     color: "#666",
     marginTop: 4,
   },
@@ -198,5 +268,25 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
     marginLeft: 6,
+  },
+
+  navheader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#eee",
+  },
+  backButton: {
+    padding: 8,
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+  },
+  headerSpacer: {
+    width: 40, // Same as back button for balance
   },
 });

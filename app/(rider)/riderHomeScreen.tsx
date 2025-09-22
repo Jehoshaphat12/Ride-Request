@@ -33,6 +33,7 @@ export default function RiderHomeScreen() {
   const router = useRouter();
   const [rideRequest, setRideRequest] = useState<any | null>(null);
   const [loading, setLoading] = useState(false);
+  const [profilePic, setProfilePic] = useState("")
   const [updatingStatus, setUpdatingStatus] = useState(false);
 
 
@@ -42,6 +43,8 @@ export default function RiderHomeScreen() {
       try {
         const profile = await getUserProfile();
         if (!profile) return;
+
+        setProfilePic(profile.profilePicture)
 
         // Only navigate if we need to LEAVE the current screen
         if (profile.onboardingStatus === "incomplete") {
@@ -62,27 +65,27 @@ export default function RiderHomeScreen() {
   }, []); // Run once on mount
 
 
-  // Update rider online status in Firestore
-  useEffect(() => {
-    const updateRiderStatus = async () => {
-      if (!auth.currentUser) return;
+//   // Update rider online status in Firestore
+//   useEffect(() => {
+//     const updateRiderStatus = async () => {
+//       if (!auth.currentUser) return;
       
-      setUpdatingStatus(true);
-      try {
-        await updateDoc(doc(db, "users", auth.currentUser.uid), {
-          isOnline: status === "online",
-          lastOnline: serverTimestamp(),
-        });
-      } catch (error) {
-        console.error("Error updating rider status:", error);
-        Alert.alert("Error", "Failed to update status");
-      } finally {
-        setUpdatingStatus(false);
-      }
-    };
+//       setUpdatingStatus(true);
+//       try {
+//         await updateDoc(doc(db, "users", auth.currentUser.uid), {
+//           isOnline: status === "online",
+//           lastOnline: serverTimestamp(),
+//         });
+//       } catch (error) {
+//         console.error("Error updating rider status:", error);
+//         Alert.alert("Error", "Failed to update status");
+//       } finally {
+//         setUpdatingStatus(false);
+//       }
+//     };
 
-    updateRiderStatus();
-  }, [status]);
+//     updateRiderStatus();
+//   }, [status]);
 
   // Listen for ride requests when online
   useEffect(() => {
@@ -145,6 +148,8 @@ export default function RiderHomeScreen() {
           name: riderData.name || riderData.userName || "Rider",
           phone: riderData.phone || null,
           profilePicture: riderData.profilePicture || null,
+          rating: riderData.rating,
+          totalRides: riderData.totalRides,
           vehicle: riderData.vehicle || {
             model: "Unknown Model",
             color: "Unknown Color",
@@ -214,8 +219,8 @@ export default function RiderHomeScreen() {
           >
             <Image
               source={
-                auth.currentUser?.photoURL 
-                  ? { uri: auth.currentUser.photoURL }
+                profilePic 
+                  ? { uri: profilePic }
                   : require("../../assets/images/defaultUserImg2.png")
               }
               style={styles.profilePic}
@@ -226,9 +231,7 @@ export default function RiderHomeScreen() {
 
       {/* Map Placeholder */}
       <View style={styles.mapPlaceholder}>
-        <Text style={{ color: darkMode ? "#ccc" : "#666", fontSize: 20 }}>
-          {status === "online" ? "🛵 Looking for rides..." : "📍 Map will be here"}
-        </Text>
+        {/* <MapScreen /> */}
       </View>
 
       {/* Status Toggle */}
@@ -240,7 +243,7 @@ export default function RiderHomeScreen() {
               status === "online" && styles.radioSelected,
               updatingStatus && styles.radioDisabled
             ]}
-            onPress={() => setStatus("online")}
+            onPress={() => {if(!updatingStatus){setStatus("online")}}}
             disabled={updatingStatus}
           >
             {updatingStatus && status === "online" ? (
@@ -261,7 +264,7 @@ export default function RiderHomeScreen() {
               status === "offline" && styles.radioSelected,
               updatingStatus && styles.radioDisabled
             ]}
-            onPress={() => setStatus("offline")}
+            onPress={() => {if(!updatingStatus){setStatus("offline")}}}
             disabled={updatingStatus}
           >
             {updatingStatus && status === "offline" ? (

@@ -25,7 +25,7 @@ import {
 export default function RiderOnboardingScreen() {
   const user = auth.currentUser;
   const router = useRouter();
-  const [name, setName] = useState("");
+  const [userName, setUserName] = useState("");
   const [profilePic, setProfilePic] = useState<string | any | null>(null);
   const [vehicleModel, setVehicleModel] = useState("");
   const [plateNumber, setPlateNumber] = useState("");
@@ -74,7 +74,7 @@ export default function RiderOnboardingScreen() {
    
   // Save onboarding info
   const handleSubmit = async () => {
-    if (!name || !vehicleModel || !plateNumber || !color) {
+    if (!userName || !vehicleModel || !plateNumber || !color) {
       Alert.alert("Error", "Please fill in all required fields");
       return;
     }
@@ -111,7 +111,7 @@ export default function RiderOnboardingScreen() {
       // Save rider data to Firestore
       await setDoc(doc(db, "users", user.uid), {
         uid: user.uid,
-        name,
+        userName,
         email: user.email,
         role: "rider",
         profilePicture: profilePicUrl,
@@ -244,8 +244,8 @@ export default function RiderOnboardingScreen() {
             style={styles.input}
             placeholder="Full Name *"
             placeholderTextColor={"#666"}
-            value={name}
-            onChangeText={setName}
+            value={userName}
+            onChangeText={setUserName}
           />
 
           <TextInput
