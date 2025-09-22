@@ -15,8 +15,8 @@ type LocationPoint = {
 }
 
 export async function requestRide(
-  pickup: string,
-  dropoff: string,
+  pickup: LocationPoint,
+  dropoff: LocationPoint,
   passengerId: string
 ) {
   const user = auth.currentUser;
@@ -24,6 +24,7 @@ export async function requestRide(
 
   const rideRef = await addDoc(collection(db, "rides"), {
     passengerId: user.uid,
+    // riderLocation: {pickup, dropoff},
     pickup,
     dropoff,
     status: "pending",
@@ -58,6 +59,7 @@ export async function acceptRide(requestId: string) {
         plateNumber: riderData.vehiclePlate || "",
         color: riderData.vehicleColor || "",
       },
+      
     },
   });
 }

@@ -299,7 +299,7 @@ export default function RiderHomeScreen() {
               <Ionicons name="location-outline" size={20} color="#7500fc" />
               <Text style={[styles.label, { color: darkMode ? "#fff" : "#333" }]}>Pickup:</Text>
               <Text style={[styles.value, { color: darkMode ? "#ccc" : "#444" }]} numberOfLines={2}>
-                {rideRequest.pickup || "Current location"}
+                {rideRequest.pickup.address || "Current location"}
               </Text>
             </View>
 
@@ -307,7 +307,7 @@ export default function RiderHomeScreen() {
               <Ionicons name="flag-outline" size={20} color="#7500fc" />
               <Text style={[styles.label, { color: darkMode ? "#fff" : "#333" }]}>Destination:</Text>
               <Text style={[styles.value, { color: darkMode ? "#ccc" : "#444" }]} numberOfLines={2}>
-                {rideRequest.dropoff || "Unknown destination"}
+                {rideRequest.dropoff.address || "Unknown destination"}
               </Text>
             </View>
 

@@ -9,6 +9,7 @@ import { useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Dimensions,
   KeyboardAvoidingView,
   Platform,
   SafeAreaView,
@@ -21,17 +22,23 @@ import {
   View,
 } from "react-native";
 
+type LocationPoint = {
+  lat: number;
+  lng: number;
+  address: string;
+};
+
 export default function PassengerHomeScreen() {
   const router = useRouter();
   const { theme, darkMode } = useTheme(); // Use the theme from context
-  
-  const [pickup, setPickup] = useState("");
-  const [destination, setDestination] = useState("");
+
+  const [pickup, setPickup] = useState<LocationPoint | null>();
+  const [destination, setDestination] = useState<LocationPoint | null>(null);
   const [loading, setLoading] = useState(false);
 
   // Ride Request function
   const handleRequestRide = async () => {
-    if (!pickup.trim() || !destination.trim()) {
+    if (!pickup?.address.trim() || !destination?.address.trim()) {
       Alert.alert("Missing Info", "Please enter both pickup and destination.");
       return;
     }
@@ -49,15 +56,14 @@ export default function PassengerHomeScreen() {
       const rideId = await requestRide(pickup, destination, passengerId);
 
       Alert.alert("Ride Requested", "Waiting for a rider to accept...");
-      router.push({ 
-        pathname: "/(passenger)/waitForRide", 
-        params: { rideId } 
+      router.push({
+        pathname: "/(passenger)/waitForRide",
+        params: { rideId },
       });
-      
     } catch (error: any) {
       console.error("Error requesting ride:", error);
       Alert.alert(
-        "Error", 
+        "Error",
         error.message || "Could not request ride. Please try again."
       );
     } finally {
@@ -66,25 +72,21 @@ export default function PassengerHomeScreen() {
   };
 
   return (
-    <SafeAreaView style={[
-      styles.container, 
-      { backgroundColor: theme.background }
-    ]}>
-      <StatusBar 
-        barStyle={darkMode ? "light-content" : "dark-content"} 
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: theme.background }]}
+    >
+      <StatusBar
+        barStyle={darkMode ? "light-content" : "dark-content"}
         backgroundColor={theme.background}
       />
-      
+
       <KeyboardAvoidingView
         style={styles.container}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
       >
         {/* Header */}
-        <View style={[
-          styles.header,
-          { backgroundColor: theme.card }
-        ]}>
+        <View style={[styles.header, { backgroundColor: theme.card }]}>
           <View style={styles.headerLeft}>
             <Image
               source={require("../../assets/images/logo.png")}
@@ -94,29 +96,23 @@ export default function PassengerHomeScreen() {
 
           <View style={styles.headerRight}>
             <TouchableOpacity
-              style={[
-                styles.iconWrapper,
-                { backgroundColor: theme.card }
-              ]}
-              onPress={() => router.push("/(passenger)/notifications")}
+              style={[styles.iconWrapper, { backgroundColor: theme.card }]}
+              onPress={() => router.push("/(passenger)/")}
             >
-              <Ionicons 
-                name="notifications-outline" 
-                size={24} 
-                color={theme.text} 
+              <Ionicons
+                name="notifications-outline"
+                size={24}
+                color={theme.text}
               />
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[
-                styles.iconWrapper,
-                { backgroundColor: theme.card }
-              ]}
+              style={[styles.iconWrapper, { backgroundColor: theme.card }]}
               onPress={() => router.push("/(passenger)/passengerSettings")}
             >
               <Image
                 source={
-                  auth.currentUser?.photoURL 
+                  auth.currentUser?.photoURL
                     ? { uri: auth.currentUser.photoURL }
                     : require("../../assets/images/defaultUserImg.png")
                 }
@@ -130,14 +126,11 @@ export default function PassengerHomeScreen() {
         {/* Map Container - Takes most of the screen */}
         <View style={styles.mapContainer}>
           <MapScreen />
-        </View>
+          </View>
 
         {/* Content Area - Fixed at the bottom */}
-        <View style={[
-          styles.content, 
-          { backgroundColor: theme.background }
-        ]}>
-          <ScrollView 
+        <View style={[styles.content, { backgroundColor: theme.background }]}>
+          <ScrollView
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.scrollContent}
@@ -145,10 +138,12 @@ export default function PassengerHomeScreen() {
             {/* Pickup & Destination Inputs */}
             <View style={styles.searchBox}>
               {/* Pickup */}
-              <View style={[
-                styles.searchContainer,
-                { backgroundColor: theme.card }
-              ]}>
+              <View
+                style={[
+                  styles.searchContainer,
+                  { backgroundColor: theme.card },
+                ]}
+              >
                 <Ionicons
                   name="locate-outline"
                   size={20}
@@ -156,12 +151,11 @@ export default function PassengerHomeScreen() {
                   style={styles.searchIcon}
                 />
                 <TextInput
-                  style={[
-                    styles.searchInput,
-                    { color: theme.text }
-                  ]}
-                  value={pickup}
-                  onChangeText={setPickup}
+                  style={[styles.searchInput, { color: theme.text }]}
+                  value={pickup?.address}
+                  onChangeText={(text) => {
+                    setPickup({ ...pickup!, address: text });
+                  }}
                   placeholder="Pickup location"
                   placeholderTextColor={theme.muted}
                   editable={!loading}
@@ -169,10 +163,12 @@ export default function PassengerHomeScreen() {
               </View>
 
               {/* Destination */}
-              <View style={[
-                styles.searchContainer,
-                { backgroundColor: theme.card }
-              ]}>
+              <View
+                style={[
+                  styles.searchContainer,
+                  { backgroundColor: theme.card },
+                ]}
+              >
                 <Ionicons
                   name="flag-outline"
                   size={20}
@@ -180,12 +176,11 @@ export default function PassengerHomeScreen() {
                   style={styles.searchIcon}
                 />
                 <TextInput
-                  style={[
-                    styles.searchInput,
-                    { color: theme.text }
-                  ]}
-                  value={destination}
-                  onChangeText={setDestination}
+                  style={[styles.searchInput, { color: theme.text }]}
+                  value={destination?.address}
+                  onChangeText={(text) =>
+                    setDestination({ ...destination!, address: text })
+                  }
                   placeholder="Enter destination"
                   placeholderTextColor={theme.muted}
                   editable={!loading}
@@ -199,36 +194,31 @@ export default function PassengerHomeScreen() {
               style={[
                 styles.rideButton,
                 { backgroundColor: theme.primary },
-                loading && styles.rideButtonDisabled
+                loading && styles.rideButtonDisabled,
               ]}
               disabled={loading}
             >
               {loading ? (
                 <ActivityIndicator color={theme.primaryText} />
               ) : (
-                <Text style={[styles.rideButtonText, { color: theme.primaryText }]}>
+                <Text
+                  style={[styles.rideButtonText, { color: theme.primaryText }]}
+                >
                   Request Ride
                 </Text>
               )}
             </TouchableOpacity>
 
             {/* Rider info / shortcuts */}
-            <View style={[
-              styles.infoSection,
-              { borderColor: theme.border }
-            ]}>
+            <View style={[styles.infoSection, { borderColor: theme.border }]}>
               <TouchableOpacity
                 onPress={() => router.push("/(passenger)/rideHistory")}
-                style={[
-                  styles.historyButton,
-                  { borderColor: theme.primary }
-                ]}
+                style={[styles.historyButton, { borderColor: theme.primary }]}
                 disabled={loading}
               >
-                <Text style={[
-                  styles.historyButtonText,
-                  { color: theme.primary }
-                ]}>
+                <Text
+                  style={[styles.historyButtonText, { color: theme.primary }]}
+                >
                   View Ride History
                 </Text>
               </TouchableOpacity>
@@ -284,7 +274,7 @@ const styles = StyleSheet.create({
     flex: 1, // Takes all available space
   },
   content: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 0,
     left: 0,
     right: 0,
@@ -375,5 +365,9 @@ const styles = StyleSheet.create({
   historyButtonText: {
     fontSize: 16,
     fontWeight: "600",
+  },
+  map: {
+    width: Dimensions.get("window").width,
+    height: Dimensions.get("window").height,
   },
 });

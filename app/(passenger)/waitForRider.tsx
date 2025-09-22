@@ -5,12 +5,12 @@ import { useRouter } from "expo-router";
 import { doc, getDoc, onSnapshot, updateDoc } from "firebase/firestore";
 import { useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    SafeAreaView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 export default function waitForRide({ rideId }: { rideId: string }) {
@@ -63,7 +63,7 @@ export default function waitForRide({ rideId }: { rideId: string }) {
               <Ionicons name="location-outline" size={20} color="#7500fc" />
               <Text style={styles.label}>Pickup:</Text>
               <Text style={styles.value}>
-                {ride?.pickup?.address ?? "Loading..."}
+                {ride.pickup.address ?? "Loading..."}
               </Text>
             </View>
 
@@ -71,7 +71,7 @@ export default function waitForRide({ rideId }: { rideId: string }) {
               <Ionicons name="flag-outline" size={20} color="#7500fc" />
               <Text style={styles.label}>Destination:</Text>
               <Text style={styles.value}>
-                {ride?.destination?.address ?? "Loading..."}
+                {ride.dropoff.address ?? "Loading..."}
               </Text>
             </View>
           </View>
@@ -132,6 +132,8 @@ export default function waitForRide({ rideId }: { rideId: string }) {
             <Text style={styles.label}>ETA:</Text>
             <Text style={styles.value}>5 mins</Text>
           </View>
+
+          
 
           {/* Cancel Button */}
           <TouchableOpacity style={styles.cancelBtn} onPress={cancelRide}>

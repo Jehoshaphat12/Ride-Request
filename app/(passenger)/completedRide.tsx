@@ -209,14 +209,14 @@ export default function RideCompletedScreen() {
           <View style={styles.row}>
             <Ionicons name="location-outline" size={20} color="#7500fc" />
             <Text style={[styles.value, { color: darkMode ? "#ccc" : "#666" }]}>
-              {ride.pickup?.address || ride.pickup || "Pickup location"}
+              {ride.pickup?.address || "Pickup location"}
             </Text>
           </View>
 
           <View style={styles.row}>
             <Ionicons name="flag-outline" size={20} color="#7500fc" />
             <Text style={[styles.value, { color: darkMode ? "#ccc" : "#666" }]}>
-              {ride.destination?.address || ride.dropoff || "Destination"}
+              {ride.dropoff?.address || "Destination"}
             </Text>
           </View>
 

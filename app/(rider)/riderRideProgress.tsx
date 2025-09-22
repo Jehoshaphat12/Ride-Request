@@ -227,12 +227,12 @@ export default function RideInProgressScreen() {
         <View style={styles.detailsSection}>
           <TouchableOpacity 
             style={styles.row} 
-            onPress={() => openMaps(ride.pickup?.address || ride.pickup)}
+            onPress={() => openMaps(ride.pickup?.address)}
           >
             <Ionicons name="location-outline" size={20} color="#7500fc" />
             <Text style={styles.label}>Pickup:</Text>
             <Text style={styles.value} numberOfLines={2}>
-              {ride.pickup?.address || ride.pickup || "Loading..."}
+              {ride.pickup?.address || "Loading..."}
             </Text>
           </TouchableOpacity>
 
@@ -243,7 +243,7 @@ export default function RideInProgressScreen() {
             <Ionicons name="flag-outline" size={20} color="#7500fc" />
             <Text style={styles.label}>Destination:</Text>
             <Text style={styles.value} numberOfLines={2}>
-              {ride.destination?.address || ride.dropoff || "Loading..."}
+              {ride.dropoff?.address || "Loading..."}
             </Text>
           </TouchableOpacity>
 

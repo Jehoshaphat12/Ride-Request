@@ -14,6 +14,7 @@ import {
   ActivityIndicator,
   FlatList,
   SafeAreaView,
+  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -30,7 +31,7 @@ type Ride = {
 };
 
 export default function RideHistoryScreen() {
-  const [rides, setRides] = useState<Ride[]>([]);
+  const [rides, setRides] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
   const { theme, darkMode } = useTheme(); // Get theme from context
@@ -46,9 +47,9 @@ export default function RideHistoryScreen() {
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const fetchRides: Ride[] = snapshot.docs.map((doc) => ({
+      const fetchRides = snapshot.docs.map((doc) => ({
         id: doc.id,
-        ...(doc.data() as Omit<Ride, "id">),
+        ...(doc.data()),
       }));
 
       setRides(fetchRides);
@@ -58,18 +59,18 @@ export default function RideHistoryScreen() {
     return () => unsubscribe();
   }, []);
 
-  const renderTrip = ({ item }: { item: Ride }) => (
+  const renderTrip = ({ item }: { item: any }) => (
     <TouchableOpacity style={[
       styles.card,
       { backgroundColor: theme.card }
     ]}>
       <View style={styles.row}>
         <Ionicons name="location-outline" size={20} color={theme.primary} />
-        <Text style={[styles.label, { color: theme.text }]}>{item.pickup}</Text>
+        <Text style={[styles.label, { color: theme.text }]}>{item.pickup.address}</Text>
       </View>
       <View style={styles.row}>
         <Ionicons name="flag-outline" size={20} color={theme.primary} />
-        <Text style={[styles.label, { color: theme.text }]}>{item.dropoff}</Text>
+        <Text style={[styles.label, { color: theme.text }]}>{item.dropoff.address}</Text>
       </View>
       <View style={styles.rowBetween}>
         <Text style={[styles.fare, { color: theme.text }]}>
@@ -128,6 +129,8 @@ export default function RideHistoryScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+      <ScrollView style={{paddingBottom: 30}}>
+
       {/* Header */}
       <View style={[
         styles.header,
@@ -164,14 +167,15 @@ export default function RideHistoryScreen() {
           </View>
         ) : (
           <FlatList
-            data={rides}
-            keyExtractor={(item) => item.id}
-            renderItem={renderTrip}
-            contentContainerStyle={{ paddingBottom: 20 }}
-            showsVerticalScrollIndicator={false}
+          data={rides}
+          keyExtractor={(item) => item.id}
+          renderItem={renderTrip}
+          contentContainerStyle={{ paddingBottom: 20 }}
+          showsVerticalScrollIndicator={false}
           />
         )}
       </View>
+        </ScrollView>
     </SafeAreaView>
   );
 }
@@ -179,7 +183,8 @@ export default function RideHistoryScreen() {
 const styles = StyleSheet.create({
   container: { 
     flex: 1,
-    paddingTop: 30 
+    paddingTop: 30, 
+    paddingBottom: 30,
   },
   header: {
     flexDirection: "row",
