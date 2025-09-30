@@ -7,6 +7,7 @@ import {
   serverTimestamp,
   updateDoc,
 } from "firebase/firestore";
+import { addNotification } from "./notifications";
 
 type LocationPoint = {
   lat: number;
@@ -31,6 +32,15 @@ export async function requestRide(
     riderId: null,
     createdAt: serverTimestamp(),
   });
+
+   // 🔔 Notify Rider
+  await addNotification(
+    rideRef.riderId || "all_riders",
+    "ride_request",
+    "New Ride Request 🚖",
+    "A passenger is requesting a ride near your area",
+    rideId
+  )
 
   console.log("Ride created with ID: ", rideRef.id);
   return rideRef.id;

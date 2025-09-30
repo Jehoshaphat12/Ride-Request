@@ -1,7 +1,9 @@
+import { auth } from "@/lib/firebaseConfig";
 import * as Device from "expo-device";
 import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
 import Toast from "react-native-toast-message";
+import { addNotification } from "./notifications";
 
 // Configure handler (how notifications behave when received)
 Notifications.setNotificationHandler({
@@ -91,6 +93,14 @@ export async function notifyNewRideRequest() {
     },
     trigger: null,
   });
+await addNotification(
+        auth.currentUser!.uid,
+        "ride_accepted",
+        "Ride Accepted ✅",
+        "You are now assigned to a passenger",
+        undefined
+      );
+  
 }
 
 export async function notifyPassengerCancelled() {

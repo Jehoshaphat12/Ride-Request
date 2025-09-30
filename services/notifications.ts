@@ -1,7 +1,8 @@
 import { auth, db } from "@/lib/firebaseConfig"
 import * as Device from "expo-device"
 import * as Notifications from "expo-notifications"
-import { addDoc, collection, doc, serverTimestamp, setDoc } from "firebase/firestore"
+import { addDoc, collection, doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore"
+import { sendPushNotification } from "./sendPushNotification"
 
 export async function addNotification(userId: string, type: string, title: string, body: string, rideId?: string) {
     const notifRef = collection(db, "users", userId, "notifications")
@@ -14,6 +15,15 @@ export async function addNotification(userId: string, type: string, title: strin
         createdAt: serverTimestamp(),
         read: false
     })
+
+    // Fetch user's expoPushToken from Firestore
+    const userDoc = await getDoc(doc(db, "users", userId))
+    const token = userDoc.exists() ? userDoc.data().expoPushToken : null
+    
+    // Send push notification if token exists
+    if(token) {
+        await sendPushNotification(token, title, body)
+    }
 }
 
 export async function registerForPushNotificationsAsync(): Promise<string | undefined> {

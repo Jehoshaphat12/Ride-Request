@@ -45,7 +45,6 @@ export default function RiderHomeScreen() {
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const { location } = useCurrentLocation();
   const [mounted, setMounted] = useState(false);
-  
 
   useEffect(() => {
     setMounted(true);
@@ -90,7 +89,7 @@ export default function RiderHomeScreen() {
 
       unsubscribe = onSnapshot(
         q,
-        (snapshot) => {
+        async (snapshot) => {
           if (!snapshot.empty) {
             const doc = snapshot.docs[0];
             setRideRequest({
@@ -99,6 +98,14 @@ export default function RiderHomeScreen() {
               // Add timestamp for UI
               receivedAt: new Date().toLocaleTimeString(),
             });
+            // 🔔 Notify Rider
+            await addNotification(
+              auth.currentUser!.uid,
+              "ride_request",
+              "New Ride Request 🚖",
+              "A passenger is requesting a ride near your area",
+              rideRequest?.uid
+            );
           } else {
             setRideRequest(null);
           }
@@ -134,8 +141,6 @@ export default function RiderHomeScreen() {
     try {
       const rider = auth.currentUser;
       if (!rider) throw new Error("No rider logged in");
-     
-      
 
       // Get rider details from Firestore
       const riderDoc = await getDoc(doc(db, "users", rider.uid));
@@ -162,17 +167,19 @@ export default function RiderHomeScreen() {
         acceptedAt: serverTimestamp(),
       });
 
-      const passengerDoc = await getDoc(doc(db, "users", rideRequest.passengerId))
-      if(passengerDoc.exists()) {
-        const passengerData = passengerDoc.data()
+      const passengerDoc = await getDoc(
+        doc(db, "users", rideRequest.passengerId)
+      );
+      if (passengerDoc.exists()) {
+        const passengerData = passengerDoc.data();
 
         // Send push notification if passenger has a token
-        if(passengerData.expoPushToken) {
+        if (passengerData.expoPushToken) {
           await sendPushNotification(
             passengerData.expoPushToken,
             "Ride Accepted",
             `${riderData.userName || "Your rider"} is on the way!`
-          )
+          );
         }
       }
 
