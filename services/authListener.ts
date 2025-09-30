@@ -2,6 +2,8 @@
 import { auth, db } from '@/lib/firebaseConfig';
 import { onAuthStateChanged, signOut, User } from 'firebase/auth';
 import { doc, getDoc, onSnapshot, Unsubscribe } from 'firebase/firestore';
+import { useEffect } from 'react';
+import { registerForPushNotificationsAsync } from './notifications';
 
 export type UserRole = 'passenger' | 'rider' | null;
 export type AuthStateCallback = (user: User | null, role: UserRole) => void;
@@ -13,6 +15,12 @@ const activeListeners = new Set<AuthStateCallback>();
 let currentUser: User | null = null;
 let currentUserRole: UserRole = null;
 let userUnsubscribe: Unsubscribe | null = null;
+
+useEffect(() => {
+  if(auth.currentUser) {
+    registerForPushNotificationsAsync()
+  }
+}, [auth.currentUser])
 
 /**
  * Main function to listen to authentication state changes

@@ -19,7 +19,8 @@ export function useUserNotifications() {
         })
 
         return () => unsub()
-    }, [])
+    }, [auth.currentUser])
 
     return notifications
 }
+

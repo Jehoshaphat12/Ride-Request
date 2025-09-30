@@ -3,7 +3,9 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { useCurrentLocation } from "@/hooks/useCurrentLocation";
 import { listenToRideUpdates } from "@/hooks/useRideListener";
 import { auth, db } from "@/lib/firebaseConfig";
+import { addNotification } from "@/services/notifications";
 import { updateRiderLocation } from "@/services/rides";
+import { sendPushNotification } from "@/services/sendPushNotification";
 import { getUserProfile } from "@/services/users";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { Image } from "expo-image";
@@ -42,11 +44,12 @@ export default function RiderHomeScreen() {
   const [profilePic, setProfilePic] = useState("");
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const { location } = useCurrentLocation();
-  const [mounted, setMounted] = useState(false)
+  const [mounted, setMounted] = useState(false);
+  
 
   useEffect(() => {
-    setMounted(true)
-  }, [])
+    setMounted(true);
+  }, []);
 
   // Check profile on mount to see if we should be on this screen
   useEffect(() => {
@@ -118,11 +121,11 @@ export default function RiderHomeScreen() {
 
   // Alert Rider of ride updates
   useEffect(() => {
-    if(rideRequest) {
+    if (rideRequest) {
       const unsub = listenToRideUpdates(rideRequest.id, "rider");
       return () => unsub();
     }
-  }, [rideRequest])
+  }, [rideRequest]);
 
   const acceptRide = async () => {
     if (!rideRequest) return;
@@ -131,6 +134,8 @@ export default function RiderHomeScreen() {
     try {
       const rider = auth.currentUser;
       if (!rider) throw new Error("No rider logged in");
+     
+      
 
       // Get rider details from Firestore
       const riderDoc = await getDoc(doc(db, "users", rider.uid));
@@ -157,7 +162,33 @@ export default function RiderHomeScreen() {
         acceptedAt: serverTimestamp(),
       });
 
-      await updateRiderLocation(rideRequest.id, location?.coords.latitude!, location?.coords.longitude!)
+      const passengerDoc = await getDoc(doc(db, "users", rideRequest.passengerId))
+      if(passengerDoc.exists()) {
+        const passengerData = passengerDoc.data()
+
+        // Send push notification if passenger has a token
+        if(passengerData.expoPushToken) {
+          await sendPushNotification(
+            passengerData.expoPushToken,
+            "Ride Accepted",
+            `${riderData.userName || "Your rider"} is on the way!`
+          )
+        }
+      }
+
+      await updateRiderLocation(
+        rideRequest.id,
+        location?.coords.latitude!,
+        location?.coords.longitude!
+      );
+      // Optionally, notify the rider too
+      await addNotification(
+        rider.uid!,
+        "ride_accepted",
+        "Ride Accepted ✅",
+        "You are now assigned to a passenger",
+        rideRequest.id
+      );
 
       Alert.alert("Ride Accepted", "You've accepted the ride request! 🚗");
 

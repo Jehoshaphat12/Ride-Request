@@ -1,9 +1,15 @@
 import { useTheme } from "@/contexts/ThemeContext";
 import { db } from "@/lib/firebaseConfig";
+import { addNotification } from "@/services/notifications";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { Image } from "expo-image";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { doc, onSnapshot, serverTimestamp, updateDoc } from "firebase/firestore";
+import {
+  doc,
+  onSnapshot,
+  serverTimestamp,
+  updateDoc,
+} from "firebase/firestore";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -22,8 +28,10 @@ export default function RideInProgressScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const { theme, darkMode } = useTheme(); // Get theme from context
-  const rideId = Array.isArray(params.rideId) ? params.rideId[0] : params.rideId;
-  
+  const rideId = Array.isArray(params.rideId)
+    ? params.rideId[0]
+    : params.rideId;
+
   const [ride, setRide] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
@@ -36,42 +44,53 @@ export default function RideInProgressScreen() {
       return;
     }
 
-    const unsubscribe = onSnapshot(doc(db, "rides", rideId), (snapshot) => {
-      if (snapshot.exists()) {
-        const rideData = snapshot.data();
-        setRide(rideData);
-        setCurrentStatus(rideData.status || "accepted");
-        setLoading(false);
-        
-        // If ride is completed, navigate to completed screen
-        if (rideData.status === "completed") {
-          router.replace({
-            pathname: "/rideCompleted",
-            params: { rideId }
-          });
-        }
-        
-        // If ride is cancelled, go back
-        if (rideData.status === "cancelled") {
-          Alert.alert("Ride Cancelled", "This ride has been cancelled");
+    const unsubscribe = onSnapshot(
+      doc(db, "rides", rideId),
+      async (snapshot) => {
+        if (snapshot.exists()) {
+          const rideData = snapshot.data();
+          setRide(rideData);
+          setCurrentStatus(rideData.status || "accepted");
+          setLoading(false);
+
+          // If ride is completed, navigate to completed screen
+          if (rideData.status === "completed") {
+            await addNotification(
+              rideData.riderId,
+              "ride",
+              "Ride Completed ✅",
+              "You successfully finished a ride",
+              rideId
+            );
+            router.replace({
+              pathname: "/rideCompleted",
+              params: { rideId },
+            });
+          }
+
+          // If ride is cancelled, go back
+          if (rideData.status === "cancelled") {
+            Alert.alert("Ride Cancelled", "This ride has been cancelled");
+            router.back();
+          }
+        } else {
+          Alert.alert("Error", "Ride not found");
           router.back();
         }
-      } else {
-        Alert.alert("Error", "Ride not found");
-        router.back();
+      },
+      (error) => {
+        console.error("Error listening to ride:", error);
+        Alert.alert("Error", "Failed to load ride details");
+        setLoading(false);
       }
-    }, (error) => {
-      console.error("Error listening to ride:", error);
-      Alert.alert("Error", "Failed to load ride details");
-      setLoading(false);
-    });
+    );
 
     return () => unsubscribe();
   }, [rideId]);
 
   const updateRideStatus = async (newStatus: string) => {
     if (!rideId) return;
-    
+
     setUpdating(true);
     try {
       const updates: any = {
@@ -91,10 +110,9 @@ export default function RideInProgressScreen() {
       if (newStatus === "completed") {
         router.replace({
           pathname: "/rideCompleted",
-          params: { rideId }
+          params: { rideId },
         });
       }
-
     } catch (error) {
       console.error("Error updating ride status:", error);
       Alert.alert("Error", "Failed to update ride status");
@@ -105,7 +123,9 @@ export default function RideInProgressScreen() {
 
   const callPassenger = () => {
     if (ride?.passengerInfo?.phone || ride?.passengerPhone) {
-      Linking.openURL(`tel:${ride.passengerInfo?.phone || ride.passengerPhone}`).catch(() => {
+      Linking.openURL(
+        `tel:${ride.passengerInfo?.phone || ride.passengerPhone}`
+      ).catch(() => {
         Alert.alert("Error", "Could not make phone call");
       });
     } else {
@@ -114,7 +134,9 @@ export default function RideInProgressScreen() {
   };
 
   const openMaps = (address: string) => {
-    const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
+    const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+      address
+    )}`;
     Linking.openURL(mapsUrl).catch(() => {
       Alert.alert("Error", "Could not open maps");
     });
@@ -123,28 +145,33 @@ export default function RideInProgressScreen() {
   // Helper function to safely extract address text
   // const getAddressText = (address: any): string => {
   //   if (!address) return "Location not specified";
-    
+
   //   if (typeof address === 'string') return address;
-    
+
   //   if (typeof address === 'object') {
   //     if (address.address) return address.address;
   //     if (address.formattedAddress) return address.formattedAddress;
   //     if (address.street && address.city) return `${address.street}, ${address.city}`;
   //     if (address.name) return address.name;
-      
+
   //     return "Location details available";
   //   }
-    
+
   //   return "Location not specified";
   // };
 
   const getStatusDisplay = (status: string) => {
     switch (status) {
-      case "accepted": return "Heading to Pickup 🚗";
-      case "picked_up": return "On Trip 🚗";
-      case "completed": return "Trip Completed ✅";
-      case "cancelled": return "Trip Cancelled ❌";
-      default: return status;
+      case "accepted":
+        return "Heading to Pickup 🚗";
+      case "picked_up":
+        return "On Trip 🚗";
+      case "completed":
+        return "Trip Completed ✅";
+      case "cancelled":
+        return "Trip Cancelled ❌";
+      default:
+        return status;
     }
   };
 
@@ -153,22 +180,32 @@ export default function RideInProgressScreen() {
       case "accepted":
         return (
           <TouchableOpacity
-            style={[styles.btn, styles.primaryBtn, { backgroundColor: theme.primary }]}
+            style={[
+              styles.btn,
+              styles.primaryBtn,
+              { backgroundColor: theme.primary },
+            ]}
             onPress={() => updateRideStatus("picked_up")}
             disabled={updating}
           >
             {updating ? (
               <ActivityIndicator color={theme.primaryText} />
             ) : (
-              <Text style={[styles.btnText, { color: theme.primaryText }]}>Passenger Picked Up</Text>
+              <Text style={[styles.btnText, { color: theme.primaryText }]}>
+                Passenger Picked Up
+              </Text>
             )}
           </TouchableOpacity>
         );
-      
+
       case "picked_up":
         return (
           <TouchableOpacity
-            style={[styles.btn, styles.successBtn, { backgroundColor: theme.success }]}
+            style={[
+              styles.btn,
+              styles.successBtn,
+              { backgroundColor: theme.success },
+            ]}
             onPress={() => updateRideStatus("completed")}
             disabled={updating}
           >
@@ -179,7 +216,7 @@ export default function RideInProgressScreen() {
             )}
           </TouchableOpacity>
         );
-      
+
       default:
         return null;
     }
@@ -187,51 +224,73 @@ export default function RideInProgressScreen() {
 
   if (loading) {
     return (
-      <View style={[styles.loadingContainer, { backgroundColor: theme.background }]}>
+      <View
+        style={[styles.loadingContainer, { backgroundColor: theme.background }]}
+      >
         <ActivityIndicator size="large" color={theme.primary} />
-        <Text style={[styles.loadingText, { color: theme.text }]}>Loading ride details...</Text>
+        <Text style={[styles.loadingText, { color: theme.text }]}>
+          Loading ride details...
+        </Text>
       </View>
     );
   }
 
   if (!ride) {
     return (
-      <View style={[styles.errorContainer, { backgroundColor: theme.background }]}>
-        <Text style={[styles.errorText, { color: theme.danger }]}>Ride not found</Text>
-        <TouchableOpacity 
-          style={[styles.backButton, { backgroundColor: theme.primary }]} 
+      <View
+        style={[styles.errorContainer, { backgroundColor: theme.background }]}
+      >
+        <Text style={[styles.errorText, { color: theme.danger }]}>
+          Ride not found
+        </Text>
+        <TouchableOpacity
+          style={[styles.backButton, { backgroundColor: theme.primary }]}
           onPress={() => router.back()}
         >
-          <Text style={[styles.backButtonText, { color: theme.primaryText }]}>Go Back</Text>
+          <Text style={[styles.backButtonText, { color: theme.primaryText }]}>
+            Go Back
+          </Text>
         </TouchableOpacity>
       </View>
     );
   }
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
-      <StatusBar 
-        barStyle={darkMode ? "light-content" : "dark-content"} 
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: theme.background }]}
+    >
+      <StatusBar
+        barStyle={darkMode ? "light-content" : "dark-content"}
         backgroundColor={theme.background}
       />
-      
+
       {/* Map Placeholder */}
       <View style={[styles.mapPlaceholder, { backgroundColor: theme.card }]}>
         <Text style={[styles.mapText, { color: theme.text }]}>
-          {currentStatus === "accepted" ? "📍 Navigating to pickup..." :
-           currentStatus === "picked_up" ? "🚗 On the way to destination" :
-           "🗺 Navigation Map"}
+          {currentStatus === "accepted"
+            ? "📍 Navigating to pickup..."
+            : currentStatus === "picked_up"
+            ? "🚗 On the way to destination"
+            : "🗺 Navigation Map"}
         </Text>
       </View>
 
       {/* Ride Status Card */}
       <View style={[styles.statusCard, { backgroundColor: theme.card }]}>
         {/* Passenger Info */}
-        <View style={[styles.passengerRow, { backgroundColor: theme.primary + "20" }]}>
+        <View
+          style={[
+            styles.passengerRow,
+            { backgroundColor: theme.primary + "20" },
+          ]}
+        >
           <Image
             source={
               ride.passengerInfo?.profilePicture || ride.passengerPhoto
-                ? { uri: ride.passengerInfo?.profilePicture || ride.passengerPhoto }
+                ? {
+                    uri:
+                      ride.passengerInfo?.profilePicture || ride.passengerPhoto,
+                  }
                 : require("../../assets/images/defaultUserImg.png")
             }
             style={styles.profilePic}
@@ -254,24 +313,32 @@ export default function RideInProgressScreen() {
 
         {/* Ride Details */}
         <View style={styles.detailsSection}>
-          <TouchableOpacity 
-            style={styles.row} 
+          <TouchableOpacity
+            style={styles.row}
             onPress={() => openMaps(ride.pickup.address)}
           >
             <Ionicons name="location-outline" size={20} color={theme.primary} />
             <Text style={[styles.label, { color: theme.muted }]}>Pickup:</Text>
-            <Text style={[styles.value, { color: theme.text }]} numberOfLines={2}>
+            <Text
+              style={[styles.value, { color: theme.text }]}
+              numberOfLines={2}
+            >
               {ride.pickup.address}
             </Text>
           </TouchableOpacity>
 
-          <TouchableOpacity 
-            style={styles.row} 
+          <TouchableOpacity
+            style={styles.row}
             onPress={() => openMaps(ride.dropoff.address)}
           >
             <Ionicons name="flag-outline" size={20} color={theme.primary} />
-            <Text style={[styles.label, { color: theme.muted }]}>Destination:</Text>
-            <Text style={[styles.value, { color: theme.text }]} numberOfLines={2}>
+            <Text style={[styles.label, { color: theme.muted }]}>
+              Destination:
+            </Text>
+            <Text
+              style={[styles.value, { color: theme.text }]}
+              numberOfLines={2}
+            >
               {ride.dropoff.address}
             </Text>
           </TouchableOpacity>
@@ -280,7 +347,13 @@ export default function RideInProgressScreen() {
           <View style={styles.row}>
             <Ionicons name="time-outline" size={20} color={theme.primary} />
             <Text style={[styles.label, { color: theme.muted }]}>Status:</Text>
-            <Text style={[styles.value, styles.statusText, { color: theme.primary }]}>
+            <Text
+              style={[
+                styles.value,
+                styles.statusText,
+                { color: theme.primary },
+              ]}
+            >
               {getStatusDisplay(currentStatus)}
             </Text>
           </View>
@@ -290,7 +363,9 @@ export default function RideInProgressScreen() {
             <View style={styles.row}>
               <Ionicons name="timer-outline" size={20} color={theme.primary} />
               <Text style={[styles.label, { color: theme.muted }]}>ETA:</Text>
-              <Text style={[styles.value, { color: theme.text }]}>{ride.estimatedDuration}</Text>
+              <Text style={[styles.value, { color: theme.text }]}>
+                {ride.estimatedDuration}
+              </Text>
             </View>
           )}
         </View>
@@ -298,10 +373,14 @@ export default function RideInProgressScreen() {
         {/* Action Buttons */}
         <View style={styles.actions}>
           {getActionButton()}
-          
+
           {/* Emergency/Cancel Button */}
           <TouchableOpacity
-            style={[styles.btn, styles.dangerBtn, { backgroundColor: theme.danger }]}
+            style={[
+              styles.btn,
+              styles.dangerBtn,
+              { backgroundColor: theme.danger },
+            ]}
             onPress={() => {
               Alert.alert(
                 "Cancel Trip",
@@ -311,8 +390,8 @@ export default function RideInProgressScreen() {
                   {
                     text: "Yes",
                     onPress: () => updateRideStatus("cancelled"),
-                    style: "destructive"
-                  }
+                    style: "destructive",
+                  },
                 ]
               );
             }}
@@ -425,7 +504,7 @@ const styles = StyleSheet.create({
   value: {
     fontSize: 14,
     flex: 1,
-    flexWrap: 'wrap',
+    flexWrap: "wrap",
   },
   statusText: {
     fontWeight: "600",

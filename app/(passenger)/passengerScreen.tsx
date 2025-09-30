@@ -2,6 +2,7 @@ import CrossPlatformMap from "@/components/CrossPlatformMap";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useCurrentLocation } from "@/hooks/useCurrentLocation";
 import { auth } from "@/lib/firebaseConfig";
+import { addNotification } from "@/services/notifications";
 import { notifyRideRequested, registerNotificationPermissions } from "@/services/NotificationService";
 import { requestRide } from "@/services/rides";
 import { getUserProfile } from "@/services/users";
@@ -73,6 +74,13 @@ export default function PassengerHomeScreen() {
 
       const rideId = await requestRide(pickup, destination, passengerId);
       notifyRideRequested()
+      await addNotification(
+        passengerId,
+        "ride_requested",
+        "Your ride request has been sent.",
+        "looking for a rider...",
+        rideId
+      )
       Alert.alert("Ride Requested", "Waiting for a rider to accept...");
       router.push({ 
         pathname: "/(passenger)/waitForRide", 

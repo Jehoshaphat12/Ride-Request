@@ -1,5 +1,6 @@
 import { useTheme } from "@/contexts/ThemeContext";
 import { db } from "@/lib/firebaseConfig";
+import { addNotification } from "@/services/notifications";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { Image } from "expo-image";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -25,6 +26,7 @@ export default function RideCompletedScreen() {
   const [rider, setRider] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [passengerId, setPassengerId] = useState<string>("")
   const router = useRouter();
   const params = useLocalSearchParams();
   const { darkMode } = useTheme();
@@ -43,6 +45,7 @@ export default function RideCompletedScreen() {
         if (rideDoc.exists()) {
           const rideData = rideDoc.data();
           setRide(rideData);
+          setPassengerId(rideData.passengerId)
 
           // Fetch rider details
           if (rideData.riderId) {
@@ -111,18 +114,37 @@ export default function RideCompletedScreen() {
         });
       }
 
+      // Create notification for completed ride to passenger
+      await addNotification(
+              passengerId,
+              "ride_completed",
+              "Ride Completed",
+              "Thanks for riding with us!",
+              rideId
+            )
       // Create notification for rider
       const passengerName = ride.passengerInfo?.name || "A passenger";
-      await updateDoc(doc(db, "notifications", `rating_${rideId}`), {
-        type: "new_rating",
-        rideId: rideId,
-        riderId: ride.riderId,
-        passengerId: ride.passengerId,
-        rating: rating,
-        message: `${passengerName} rated you ${rating} stars`,
-        createdAt: serverTimestamp(),
-        read: false,
-      });
+      // await updateDoc(doc(db, "notifications", `rating_${rideId}`), {
+      //   type: "new_rating",
+      //   rideId: rideId,
+      //   riderId: ride.riderId,
+      //   passengerId: ride.passengerId,
+      //   rating: rating,
+      //   message: `${passengerName} rated you ${rating} stars`,
+      //   createdAt: serverTimestamp(),
+      //   read: false,
+      // });
+      await addNotification(
+              ride.riderId,
+              "new_rating",
+              `New Rating Alert`,
+              `${passengerName} rated you ${rating} stars⭐`,
+              rideId
+            )
+      if(Platform.OS === "web") {
+        alert("Thank You!. Your rating has been submitted successfully")
+        router.replace("/(passenger)/passengerScreen")
+      } 
 
       Alert.alert(
         "Thank You!", 

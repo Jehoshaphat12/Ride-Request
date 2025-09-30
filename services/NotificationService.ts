@@ -47,7 +47,7 @@ export async function registerNotificationPermissions() {
   }
 }
 
-export function showNotification(title: string, body: string) {
+export async function showNotification(title: string, body: string) {
   if (Platform.OS === "web") {
     // ✅ Web fallback: toast
     Toast.show({
@@ -59,47 +59,28 @@ export function showNotification(title: string, body: string) {
     });
   } else {
     // ✅ Mobile: expo-notifications
-    Notifications.scheduleNotificationAsync({
-      content: { title, body },
+    await Notifications.scheduleNotificationAsync({
+      content: { title, body, sound: true },
       trigger: null,
     });
   }
 }
 
-// Utility function to show notification
-export async function showLocalNotification(
-  title: string,
-  body: string
-) {
-  if(Platform.OS === "web") {
-    console.log("[WEB] Notification:", title, body);
-    return
-  }
-
-  await Notifications.scheduleNotificationAsync({
-    content: {
-      title,
-      body,
-      sound: true,
-    },
-    trigger: null, // null = show immediately
-  });
-}
 
 // Predefined helpers for ride flow
 export const notifyRideRequested = () =>
-  showLocalNotification("Ride Requested 🚕", "Looking for a driver…");
+  showNotification("Ride Requested 🚕", "Looking for a driver…");
 
 export const notifyRideAccepted = () =>
-  showLocalNotification("Driver Found 🎉", "Your driver is on the way!");
+  showNotification("Driver Found 🎉", "Your driver is on the way!");
 
 export const notifyDriverArrived = () =>
-  showLocalNotification("Driver Arrived ✅", "Your driver is waiting at pickup.");
+  showNotification("Driver Arrived ✅", "Your driver is waiting at pickup.");
 
 export const notifyRideCompleted = () =>
-  showLocalNotification("Ride Completed 🎊", "Thanks for riding with us!");
+  showNotification("Ride Completed 🎊", "Thanks for riding with us!");
 export const notifyRideCancelled = () =>
-  showLocalNotification("Ride Cancelled ❌", "Your ride has been cancelled.");
+  showNotification("Ride Cancelled ❌", "Your ride has been cancelled.");
 
 
 export async function notifyNewRideRequest() {

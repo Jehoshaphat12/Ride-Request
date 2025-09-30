@@ -24,7 +24,7 @@ export default function WaitingScreen() {
         if (profile.onboardingStatus === "incomplete") {
           router.replace("/(rider)/OnboardingScreen2");
         } else if (profile.onboardingStatus === "approved") {
-          router.replace("/(rider)/riderHomeScreen");
+          router.replace("/(rider)/riderHome");
         } else {
           // still pending → stay on WaitingScreen
           setLoading(false);
