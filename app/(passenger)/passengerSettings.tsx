@@ -127,7 +127,7 @@ export default function PassengerProfileScreen() {
           </View>
           <TouchableOpacity
             style={[styles.editBtn, { backgroundColor: theme.primary }]}
-            onPress={() => router.push("/")}
+            onPress={() => router.push("/(passenger)/editProfile")}
           >
             <Ionicons name="create-outline" size={18} color={theme.primaryText} />
             <Text style={[styles.editText, { color: theme.primaryText }]}>Edit</Text>
@@ -144,12 +144,12 @@ export default function PassengerProfileScreen() {
             },
           ]}
         >
-          <OptionRow
+          {/* <OptionRow
             icon="person-outline"
             label="Account Info"
             theme={theme}
-            onPress={() => router.push("/")}
-          />
+            onPress={() => router.push("/(passenger)/passengerScreen")}
+          /> */}
           <OptionRow
             icon="time-outline"
             label="Ride History"
@@ -160,19 +160,19 @@ export default function PassengerProfileScreen() {
             icon="card-outline"
             label="Payment Methods"
             theme={theme}
-            onPress={() => router.push("/")}
+            onPress={() => router.push("/(passenger)/passengerScreen")}
           />
           <OptionRow
             icon="help-circle-outline"
             label="Help & Support"
             theme={theme}
-            onPress={() => router.push("/")}
+            onPress={() => router.push("/(passenger)/passengerScreen")}
           />
           <OptionRow
             icon="notifications-outline"
             label="Notifications"
             theme={theme}
-            onPress={() => router.push("/")}
+            onPress={() => router.push("/(passenger)/passengerScreen")}
           />
 
           {/* Dark Mode Toggle */}

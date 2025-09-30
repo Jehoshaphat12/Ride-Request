@@ -1,42 +1,89 @@
+import { useTheme } from "@/contexts/ThemeContext";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import {
+  SafeAreaView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
+} from "react-native";
 
 export default function LoginScreen() {
   const router = useRouter();
+  const { theme, darkMode } = useTheme(); // Get theme from context
 
   return (
-    <View style={styles.container}>
-      <View style={styles.imageContainer}>
-        {/* You can add a logo or image here if needed */}
-        <Image
-          source={require("@/assets/images/welcome-img.png")}
-          style={{ width: 350, height: 350 }}
-        />
+    <SafeAreaView style={[styles.container, { backgroundColor: "#b475fcff" }]}>
+      <StatusBar 
+        barStyle={darkMode ? "light-content" : "dark-content"} 
+        backgroundColor={theme.background}
+      />
+      
+      <View style={styles.content}>
+        <View style={styles.imageContainer}>
+          <Image
+            source={require("@/assets/images/welcome-img.png")}
+            style={{ width: 350, height: 350 }}
+            contentFit="contain"
+          />
+        </View>
+        
+        <View style={[
+          styles.loginButtonsContainer, 
+          { 
+            backgroundColor: theme.card,
+            shadowColor: darkMode ? "#000" : "#7500fc",
+            shadowOpacity: darkMode ? 0.3 : 0.1,
+          }
+        ]}>
+          <Text style={[styles.title, { color: theme.text }]}>
+            Welcome to RideRequest
+          </Text>
+          <Text style={[styles.paragraph, { color: theme.muted }]}>
+            Lorem ipsum dolor sit amet consectetur adipisicing elit. it amet consectetur adipisicing elit.
+          </Text>
+          
+          <TouchableOpacity 
+            style={[styles.loginButtons, { backgroundColor: theme.primary }]} 
+            onPress={() => router.push("./Login")}
+          >
+            <Text style={[styles.buttonText, { color: theme.primaryText }]}>
+              Need a Ride
+            </Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity  
+            style={[
+              styles.RegisterButtons, 
+              { 
+                backgroundColor: theme.card,
+                borderColor: theme.primary 
+              }
+            ]} 
+            onPress={() => router.replace("./RiderLogin")}
+          >
+            <Text style={[styles.registerButtonText, { color: theme.primary }]}>
+              Become a Rider
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
-      <View style={[styles.loginButtonsContainer, { width: "100%", gap: 12 }]}>
-    <Text style={styles.title}>Welcome to RideRequest</Text>
-    <Text style={styles.paragraph}>Lorem ipsum dolor sit amet consectetur adipisicing elit. it amet consectetur adipisicing elit.</Text>
-      <TouchableOpacity style={styles.loginButtons}  onPress={() => router.push("./Login")}>
-        <Text style={{textAlign: "center", fontSize: 20, fontWeight: "600", color: "#ffffffff"}}>Need a Ride</Text>
-      </TouchableOpacity>
-      <TouchableOpacity  style={styles.RegisterButtons} onPress={() => router.replace("./RiderLogin")}>
-        <Text style={{textAlign: "center", fontSize: 20, fontWeight: "600", color: "#7500fcff"}}>Become a Rider</Text>
-      </TouchableOpacity>
-
-      </View>
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  content: {
+    flex: 1,
     justifyContent: "center",
     alignItems: "center",
     paddingTop: 16,
     paddingHorizontal: 0,
-    backgroundColor: "#e4d6ffff",
   },
   title: {
     fontSize: 32,
@@ -48,32 +95,49 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginBottom: 32,
     textAlign: "center",
-    },
-    loginButtonsContainer: {
+    lineHeight: 22,
+    paddingHorizontal: 16,
+  },
+  loginButtonsContainer: {
     flexDirection: "column",
-    backgroundColor: "#fff",
     paddingTop: 32,
     paddingBottom: 64,
     paddingHorizontal: 32,
     borderRadius: 20,
-    },
+    width: "100%",
+    gap: 12,
+    // Shadow effects
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 8,
+    elevation: 8,
+  },
   imageContainer: {
     flex: 1,
     height: 400,
     paddingTop: 28,
     alignItems: "center",
     justifyContent: "center",
+    maxHeight: 400,
   },
   loginButtons: {
-    backgroundColor: "#7500fcff",
-    paddingVertical: 14,
-    borderRadius: 10,
+    paddingVertical: 16,
+    borderRadius: 12,
+    marginTop: 8,
   },
-    RegisterButtons: {
-    backgroundColor: "#ffffffff",
-    paddingVertical: 14,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: "#7500fcff",
+  RegisterButtons: {
+    paddingVertical: 16,
+    borderRadius: 12,
+    borderWidth: 2,
+    marginTop: 8,
+  },
+  buttonText: {
+    textAlign: "center",
+    fontSize: 18,
+    fontWeight: "600",
+  },
+  registerButtonText: {
+    textAlign: "center",
+    fontSize: 18,
+    fontWeight: "600",
   },
 });

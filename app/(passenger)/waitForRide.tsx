@@ -1,6 +1,6 @@
 import { useTheme } from "@/contexts/ThemeContext";
-import { useRideListener } from "@/hooks/useRideListener";
 import { db } from "@/lib/firebaseConfig";
+import { notifyRideAccepted } from "@/services/NotificationService";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { Image } from "expo-image";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -15,7 +15,6 @@ import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
-  Dimensions,
   Linking,
   Platform,
   SafeAreaView,
@@ -39,8 +38,7 @@ export default function WaitForRide() {
   const [status, setStatus] = useState("pending");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  const rideLocation = useRideListener(rideId);
+  
 
   useEffect(() => {
     if (!rideId) {
@@ -67,6 +65,11 @@ export default function WaitForRide() {
             } catch (error) {
               console.error("Error fetching rider:", error);
             }
+          }
+
+          // notify if ride is accepted
+          if(data.status === "accepted") {
+            notifyRideAccepted()
           }
 
           // navigate to rideInProgress Screen
@@ -144,18 +147,14 @@ export default function WaitForRide() {
 
   if (error) {
     return (
-      <View
-        style={[styles.errorContainer, { backgroundColor: theme.background }]}
-      >
+      <View style={[styles.errorContainer, { backgroundColor: theme.background }]}>
         <Ionicons name="alert-circle" size={48} color={theme.danger} />
         <Text style={[styles.errorText, { color: theme.text }]}>{error}</Text>
         <TouchableOpacity
           style={[styles.backButton, { backgroundColor: theme.primary }]}
           onPress={() => router.back()}
         >
-          <Text style={[styles.backButtonText, { color: theme.primaryText }]}>
-            Go Back
-          </Text>
+          <Text style={[styles.backButtonText, { color: theme.primaryText }]}>Go Back</Text>
         </TouchableOpacity>
       </View>
     );
@@ -163,38 +162,33 @@ export default function WaitForRide() {
 
   if (loading) {
     return (
-      <View
-        style={[styles.loadingContainer, { backgroundColor: theme.background }]}
-      >
+      <View style={[styles.loadingContainer, { backgroundColor: theme.background }]}>
         <ActivityIndicator size="large" color={theme.primary} />
-        <Text style={[styles.loadingText, { color: theme.text }]}>
-          Loading ride details...
-        </Text>
+        <Text style={[styles.loadingText, { color: theme.text }]}>Loading ride details...</Text>
       </View>
     );
   }
 
   return (
-    <SafeAreaView
-      style={[styles.container, { backgroundColor: theme.background }]}
-    >
-      <StatusBar
-        barStyle={darkMode ? "light-content" : "dark-content"}
-        backgroundColor={theme.background}
-      />
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+      <StatusBar barStyle={darkMode ? "light-content" : "dark-content"} backgroundColor={theme.background} />
 
       {/* Map Placeholder */}
       <View style={[styles.mapPlaceholder, { backgroundColor: theme.card }]}>
-        
+        <Text style={[styles.mapText, { color: theme.text }]}>
+          {status === "pending"
+            ? "🔍 Searching for drivers..."
+            : status === "accepted"
+            ? "🚗 Driver on the way"
+            : "🗺 Map Loading..."}
+        </Text>
       </View>
 
       {/* PENDING STATE */}
       {status === "pending" && (
         <View style={[styles.card, { backgroundColor: theme.card }]}>
           <ActivityIndicator size="large" color={theme.primary} />
-          <Text style={[styles.title, { color: theme.text }]}>
-            Looking for a Rider...
-          </Text>
+          <Text style={[styles.title, { color: theme.text }]}>Looking for a Rider...</Text>
           <Text style={[styles.subtitle, { color: theme.muted }]}>
             We're finding the best Rider for you
           </Text>
@@ -205,18 +199,9 @@ export default function WaitForRide() {
               style={styles.row}
               onPress={() => ride?.pickup && openMaps(ride.pickup)}
             >
-              <Ionicons
-                name="location-outline"
-                size={20}
-                color={theme.primary}
-              />
-              <Text style={[styles.label, { color: theme.muted }]}>
-                Pickup:
-              </Text>
-              <Text
-                style={[styles.value, { color: theme.text }]}
-                numberOfLines={2}
-              >
+              <Ionicons name="location-outline" size={20} color={theme.primary} />
+              <Text style={[styles.label, { color: theme.muted }]}>Pickup:</Text>
+              <Text style={[styles.value, { color: theme.text }]} numberOfLines={2}>
                 {ride?.pickup?.address || "Current location"}
               </Text>
             </TouchableOpacity>
@@ -226,26 +211,19 @@ export default function WaitForRide() {
               onPress={() => ride?.destination && openMaps(ride.destination)}
             >
               <Ionicons name="flag-outline" size={20} color={theme.primary} />
-              <Text style={[styles.label, { color: theme.muted }]}>
-                Destination:
-              </Text>
-              <Text
-                style={[styles.value, { color: theme.text }]}
-                numberOfLines={2}
-              >
+              <Text style={[styles.label, { color: theme.muted }]}>Destination:</Text>
+              <Text style={[styles.value, { color: theme.text }]} numberOfLines={2}>
                 {ride?.dropoff?.address || "Loading..."}
               </Text>
             </TouchableOpacity>
           </View>
 
           {/* Cancel Ride Button */}
-          <TouchableOpacity
-            style={[styles.cancelBtn, { borderColor: theme.danger }]}
+          <TouchableOpacity 
+            style={[styles.cancelBtn, { borderColor: theme.danger }]} 
             onPress={cancelRide}
           >
-            <Text style={[styles.cancelText, { color: theme.danger }]}>
-              Cancel Ride
-            </Text>
+            <Text style={[styles.cancelText, { color: theme.danger }]}>Cancel Ride</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -254,25 +232,13 @@ export default function WaitForRide() {
       {status === "accepted" && ride && (
         <View style={[styles.card, { backgroundColor: theme.card }]}>
           {/* Driver Header */}
-          <View
-            style={[
-              styles.sectionHeader,
-              { backgroundColor: theme.background, borderColor: theme.border },
-            ]}
-          >
+          <View style={[styles.sectionHeader, { backgroundColor: theme.background, borderColor: theme.border }]}>
             <Ionicons name="car-sport" size={24} color={theme.primary} />
-            <Text style={[styles.sectionTitle, { color: theme.text }]}>
-              Driver Assigned
-            </Text>
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>Driver Assigned</Text>
           </View>
 
           {/* Driver Row */}
-          <View
-            style={[
-              styles.driverRow,
-              { backgroundColor: theme.primary + "20" },
-            ]}
-          >
+          <View style={[styles.driverRow, { backgroundColor: theme.primary + "20" }]}>
             <Image
               source={
                 ride.riderInfo?.profilePicture || rider?.profilePicture
@@ -308,9 +274,7 @@ export default function WaitForRide() {
           <View style={styles.section}>
             <View style={styles.row}>
               <Ionicons name="car-outline" size={20} color={theme.primary} />
-              <Text style={[styles.label, { color: theme.muted }]}>
-                Vehicle:
-              </Text>
+              <Text style={[styles.label, { color: theme.muted }]}>Vehicle:</Text>
               <Text style={[styles.value, { color: theme.text }]}>
                 {ride.riderInfo?.vehicle?.model ||
                   rider?.vehicle?.model ||
@@ -319,11 +283,7 @@ export default function WaitForRide() {
             </View>
 
             <View style={styles.row}>
-              <Ionicons
-                name="pricetag-outline"
-                size={20}
-                color={theme.primary}
-              />
+              <Ionicons name="pricetag-outline" size={20} color={theme.primary} />
               <Text style={[styles.label, { color: theme.muted }]}>Color:</Text>
               <Text style={[styles.value, { color: theme.text }]}>
                 {ride.riderInfo?.vehicle?.color ||
@@ -333,11 +293,7 @@ export default function WaitForRide() {
             </View>
 
             <View style={styles.row}>
-              <Ionicons
-                name="document-outline"
-                size={20}
-                color={theme.primary}
-              />
+              <Ionicons name="document-outline" size={20} color={theme.primary} />
               <Text style={[styles.label, { color: theme.muted }]}>Plate:</Text>
               <Text style={[styles.value, { color: theme.text }]}>
                 {ride.riderInfo?.vehicle?.plateNumber ||
@@ -349,37 +305,18 @@ export default function WaitForRide() {
 
           {/* Trip Details */}
           <View style={styles.section}>
-            <View
-              style={[
-                styles.sectionHeader,
-                {
-                  backgroundColor: theme.background,
-                  borderColor: theme.border,
-                },
-              ]}
-            >
+            <View style={[styles.sectionHeader, { backgroundColor: theme.background, borderColor: theme.border }]}>
               <Ionicons name="navigate" size={20} color={theme.primary} />
-              <Text style={[styles.sectionTitle, { color: theme.text }]}>
-                Trip Details
-              </Text>
+              <Text style={[styles.sectionTitle, { color: theme.text }]}>Trip Details</Text>
             </View>
 
             <TouchableOpacity
               style={styles.row}
               onPress={() => openMaps(ride.pickup?.address || ride.pickup)}
             >
-              <Ionicons
-                name="location-outline"
-                size={20}
-                color={theme.primary}
-              />
-              <Text style={[styles.label, { color: theme.muted }]}>
-                Pickup:
-              </Text>
-              <Text
-                style={[styles.value, { color: theme.text }]}
-                numberOfLines={2}
-              >
+              <Ionicons name="location-outline" size={20} color={theme.primary} />
+              <Text style={[styles.label, { color: theme.muted }]}>Pickup:</Text>
+              <Text style={[styles.value, { color: theme.text }]} numberOfLines={2}>
                 {ride.pickup?.address}
               </Text>
             </TouchableOpacity>
@@ -391,13 +328,8 @@ export default function WaitForRide() {
               }
             >
               <Ionicons name="flag-outline" size={20} color={theme.primary} />
-              <Text style={[styles.label, { color: theme.muted }]}>
-                Destination:
-              </Text>
-              <Text
-                style={[styles.value, { color: theme.text }]}
-                numberOfLines={2}
-              >
+              <Text style={[styles.label, { color: theme.muted }]}>Destination:</Text>
+              <Text style={[styles.value, { color: theme.text }]} numberOfLines={2}>
                 {ride.dropoff?.address}
               </Text>
             </TouchableOpacity>
@@ -405,37 +337,25 @@ export default function WaitForRide() {
             <View style={styles.row}>
               <Ionicons name="time-outline" size={20} color={theme.primary} />
               <Text style={[styles.label, { color: theme.muted }]}>ETA:</Text>
-              <Text style={[styles.value, { color: theme.text }]}>
-                5-10 mins
-              </Text>
+              <Text style={[styles.value, { color: theme.text }]}>5-10 mins</Text>
             </View>
           </View>
 
           {/* Action Buttons */}
           <View style={styles.buttonRow}>
             <TouchableOpacity
-              style={[
-                styles.actionButton,
-                styles.secondaryButton,
-                { borderColor: theme.primary },
-              ]}
+              style={[styles.actionButton, styles.secondaryButton, { borderColor: theme.primary }]}
               onPress={() => rider?.phone && callDriver(rider.phone)}
             >
               <Ionicons name="call" size={20} color={theme.primary} />
-              <Text
-                style={[styles.secondaryButtonText, { color: theme.primary }]}
-              >
-                Call Driver
-              </Text>
+              <Text style={[styles.secondaryButtonText, { color: theme.primary }]}>Call Driver</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity
-              style={[styles.cancelBtn, { borderColor: theme.danger }]}
+            <TouchableOpacity 
+              style={[styles.cancelBtn, { borderColor: theme.danger }]} 
               onPress={cancelRide}
             >
-              <Text style={[styles.cancelText, { color: theme.danger }]}>
-                Cancel Ride
-              </Text>
+              <Text style={[styles.cancelText, { color: theme.danger }]}>Cancel Ride</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -445,15 +365,9 @@ export default function WaitForRide() {
       {status === "completed" && (
         <View style={[styles.card, { backgroundColor: theme.card }]}>
           <Ionicons name="checkmark-circle" size={48} color={theme.success} />
-          <Text style={[styles.title, { color: theme.text }]}>
-            Ride Completed!
-          </Text>
-          <Text style={[styles.subtitle, { color: theme.muted }]}>
-            Thank you for riding with us
-          </Text>
-          <Text style={[styles.loadingText, { color: theme.muted }]}>
-            Returning to home screen...
-          </Text>
+          <Text style={[styles.title, { color: theme.text }]}>Ride Completed!</Text>
+          <Text style={[styles.subtitle, { color: theme.muted }]}>Thank you for riding with us</Text>
+          <Text style={[styles.loadingText, { color: theme.muted }]}>Returning to home screen...</Text>
         </View>
       )}
 
@@ -461,12 +375,8 @@ export default function WaitForRide() {
       {status === "cancelled" && (
         <View style={[styles.card, { backgroundColor: theme.card }]}>
           <Ionicons name="close-circle" size={48} color={theme.danger} />
-          <Text style={[styles.title, { color: theme.text }]}>
-            Ride Cancelled
-          </Text>
-          <Text style={[styles.loadingText, { color: theme.muted }]}>
-            Returning to home screen...
-          </Text>
+          <Text style={[styles.title, { color: theme.text }]}>Ride Cancelled</Text>
+          <Text style={[styles.loadingText, { color: theme.muted }]}>Returning to home screen...</Text>
         </View>
       )}
     </SafeAreaView>
@@ -648,10 +558,5 @@ const styles = StyleSheet.create({
   backButtonText: {
     fontSize: 16,
     fontWeight: "600",
-  },
-
-  map: {
-    width: Dimensions.get("window").width,
-    height: Dimensions.get("window").height,
   },
 });

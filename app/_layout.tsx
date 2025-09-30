@@ -5,6 +5,7 @@ import { Stack, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useRef, useState } from "react";
 import { View } from "react-native";
+import Toast from "react-native-toast-message";
 import { ThemeProvider, useTheme } from "../contexts/ThemeContext";
 import Loader from "./Loader";
 
@@ -47,7 +48,7 @@ function RootLayoutContent() {
         } else if (profile.onboardingStatus === "incomplete") {
           targetRoute = "/(rider)/OnboardingScreen2";
         } else if (profile.onboardingStatus === "approved") {
-          targetRoute = "/(rider)/riderHomeScreen";
+          targetRoute = "/(rider)/riderHome";
         }
       } else if (profile.role === "passenger") {
         targetRoute = "/(passenger)/passengerScreen";
@@ -131,6 +132,7 @@ export default function RootLayout() {
   return (
     <ThemeProvider>
       <RootLayoutContent />
+      <Toast />
     </ThemeProvider>
   );
 }

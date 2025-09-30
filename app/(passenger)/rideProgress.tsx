@@ -15,7 +15,6 @@ import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
-  Dimensions,
   Linking,
   Platform,
   SafeAreaView,
@@ -24,8 +23,6 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import MapView, { Marker } from "react-native-maps";
-import Loader from "../Loader";
 
 export default function RideInProgressScreen() {
   const router = useRouter();
@@ -36,14 +33,12 @@ export default function RideInProgressScreen() {
     : params.rideId;
 
   const [ride, setRide] = useState<any>(null);
-  const [rider, setRider] = useState<any>(null);
+  const [rider, setRider] = useState<any>(null)
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [eta, setEta] = useState("12 mins"); // You can calculate this based on distance
 
-  const rideLocation = useRideListener(rideId);
-
-  
+  const rideLocation = useRideListener(rideId)
 
   useEffect(() => {
     if (!rideId) {
@@ -61,13 +56,12 @@ export default function RideInProgressScreen() {
           setLoading(false);
 
           // Fetch rider details if assigned
-          const riderId = rideData.riderId;
+          const riderId = rideData.riderId
           if (riderId) {
             try {
               const riderSnap = await getDoc(doc(db, "users", riderId));
               if (riderSnap.exists()) {
                 setRider(riderSnap.data());
-                console.log(rider.totalRides);
               }
             } catch (error) {
               console.error("Error fetching rider:", error);
@@ -75,14 +69,14 @@ export default function RideInProgressScreen() {
           }
 
           // Handle different ride statuses
-          if (rideData.status === "completed") {
+          if (rideData?.status === "completed") {
             router.replace({
               pathname: "/(passenger)/completedRide",
               params: { rideId },
             });
           }
 
-          if (rideData.status === "cancelled") {
+          if (rideData?.status === "cancelled") {
             Alert.alert("Ride Cancelled", "This ride has been cancelled");
             router.back();
           }
@@ -176,7 +170,7 @@ export default function RideInProgressScreen() {
   };
 
   const getStatusMessage = () => {
-    if (!ride) return "Loading...";
+    if (!ride || !ride.status) return "Loading...";
 
     switch (ride.status) {
       case "accepted":
@@ -195,10 +189,15 @@ export default function RideInProgressScreen() {
   if (loading) {
     return (
       <View
-        style={[styles.loadingContainer, { backgroundColor: theme.background }]}
+        style={[
+          styles.loadingContainer,
+          { backgroundColor: theme.background },
+        ]}
       >
         <ActivityIndicator size="large" color={theme.primary} />
-        <Text style={[styles.loadingText, { color: theme.text }]}>
+        <Text
+          style={[styles.loadingText, { color: theme.text }]}
+        >
           Loading ride details...
         </Text>
       </View>
@@ -208,18 +207,21 @@ export default function RideInProgressScreen() {
   if (!ride) {
     return (
       <View
-        style={[styles.errorContainer, { backgroundColor: theme.background }]}
+        style={[
+          styles.errorContainer,
+          { backgroundColor: theme.background },
+        ]}
       >
-        <Text style={[styles.errorText, { color: theme.danger }]}>
+        <Text
+          style={[styles.errorText, { color: theme.danger }]}
+        >
           Ride not found
         </Text>
         <TouchableOpacity
           style={[styles.backButton, { backgroundColor: theme.primary }]}
           onPress={() => router.back()}
         >
-          <Text style={[styles.backButtonText, { color: theme.primaryText }]}>
-            Go Back
-          </Text>
+          <Text style={[styles.backButtonText, { color: theme.primaryText }]}>Go Back</Text>
         </TouchableOpacity>
       </View>
     );
@@ -227,59 +229,27 @@ export default function RideInProgressScreen() {
 
   return (
     <SafeAreaView
-      style={[styles.container, { backgroundColor: theme.background }]}
+      style={[
+        styles.container,
+        { backgroundColor: theme.background },
+      ]}
     >
       {/* Map Placeholder */}
       <View style={[styles.mapPlaceholder, { backgroundColor: theme.card }]}>
-        {/* <Text style={[styles.mapText, { color: theme.text }]}>
+        <Text style={[styles.mapText, { color: theme.text }]}>
           {getStatusMessage()}
-        </Text> */}
-
-        {rideLocation ? (
-          <MapView
-            style={styles.map}
-            // provider={provider === "google" ? PROVIDER_GOOGLE : undefined}
-            initialRegion={{
-              latitude: rideLocation.pickup.lat,
-              longitude: rideLocation.pick.lng,
-              latitudeDelta: 0.02,
-              longitudeDelta: 0.02,
-            }}
-            showsUserLocation={true}
-          >
-            {/* Passenger pickup marker */}
-            <Marker
-              coordinate={{
-                latitude: rideLocation.pickup.lat,
-                longitude: rideLocation.pickup.lng,
-              }}
-              title="Pickup Location"
-              pinColor="voilet"
-            />
-
-            {/* Rider Live location */}
-            {rideLocation.rider && (
-              <Marker coordinate={{
-                latitude: rideLocation.riderLocation.lat,
-                longitude: rideLocation.rider.riderLocation.lng,
-              }}
-                title="Rider Location"
-                pinColor="green"
-              />
-            )}
-          </MapView>
-        ) : (
-          <Loader msg="Loading ride data..." />
-        )}
-        
+        </Text>
       </View>
 
       {/* Ride Info Card */}
-      <View style={[styles.card, { backgroundColor: theme.card }]}>
+      <View
+        style={[
+          styles.card,
+          { backgroundColor: theme.card },
+        ]}
+      >
         {/* Driver Row */}
-        <View
-          style={[styles.driverRow, { backgroundColor: theme.primary + "20" }]}
-        >
+        <View style={[styles.driverRow, { backgroundColor: theme.primary + "20" }]}>
           <Image
             source={
               ride.riderInfo?.profilePicture
@@ -290,12 +260,19 @@ export default function RideInProgressScreen() {
             contentFit="cover"
           />
           <View style={styles.driverInfo}>
-            <Text style={[styles.driverName, { color: theme.text }]}>
+            <Text
+              style={[styles.driverName, { color: theme.text }]}
+            >
               {ride.riderInfo?.name || "Driver"}
             </Text>
-            <Text style={[styles.driverRating, { color: theme.muted }]}>
-              ⭐ {ride.riderInfo.rating?.toFixed(1) || "4.8"} (
-              {ride.riderInfo.totalRides || "0"} rides)
+            <Text
+              style={[
+                styles.driverRating,
+                { color: theme.muted },
+              ]}
+            >
+              ⭐ { ride.riderInfo.rating?.toFixed(1) || "4.8"} (
+              { ride.riderInfo.totalRides || "0"} rides)
             </Text>
           </View>
           <TouchableOpacity
@@ -314,12 +291,14 @@ export default function RideInProgressScreen() {
             onPress={() => openMaps(ride.pickup?.address || ride.pickup)}
           >
             <Ionicons name="location-outline" size={20} color={theme.primary} />
-            <Text style={[styles.label, { color: theme.muted }]}>From:</Text>
+            <Text style={[styles.label, { color: theme.muted }]}>
+              From:
+            </Text>
             <Text
               style={[styles.value, { color: theme.text }]}
               numberOfLines={2}
             >
-              {ride.pickup?.address || ride.pickup || "Current location"}
+              {ride.pickup?.address || "Current location"}
             </Text>
           </TouchableOpacity>
 
@@ -330,7 +309,9 @@ export default function RideInProgressScreen() {
             }
           >
             <Ionicons name="flag-outline" size={20} color={theme.primary} />
-            <Text style={[styles.label, { color: theme.muted }]}>To:</Text>
+            <Text style={[styles.label, { color: theme.muted }]}>
+              To:
+            </Text>
             <Text
               style={[styles.value, { color: theme.text }]}
               numberOfLines={2}
@@ -341,9 +322,14 @@ export default function RideInProgressScreen() {
 
           <View style={styles.row}>
             <Ionicons name="time-outline" size={20} color={theme.primary} />
-            <Text style={[styles.label, { color: theme.muted }]}>Status:</Text>
+            <Text style={[styles.label, { color: theme.muted }]}>
+              Status:
+            </Text>
             <Text
-              style={[styles.value, { color: theme.text, fontWeight: "600" }]}
+              style={[
+                styles.value,
+                { color: theme.text, fontWeight: "600" },
+              ]}
             >
               {getStatusMessage()}
             </Text>
@@ -352,8 +338,14 @@ export default function RideInProgressScreen() {
           {ride.estimatedDuration && (
             <View style={styles.row}>
               <Ionicons name="timer-outline" size={20} color={theme.primary} />
-              <Text style={[styles.label, { color: theme.muted }]}>ETA:</Text>
-              <Text style={[styles.value, { color: theme.text }]}>
+              <Text
+                style={[styles.label, { color: theme.muted }]}
+              >
+                ETA:
+              </Text>
+              <Text
+                style={[styles.value, { color: theme.text }]}
+              >
                 {ride.estimatedDuration}
               </Text>
             </View>
@@ -368,14 +360,22 @@ export default function RideInProgressScreen() {
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.cancelBtn, { borderColor: theme.primary }]}
+            style={[
+              styles.cancelBtn,
+              { borderColor: theme.primary },
+            ]}
             onPress={cancelRide}
             disabled={updating}
           >
             {updating ? (
               <ActivityIndicator color={theme.primary} />
             ) : (
-              <Text style={[styles.cancelText, { color: theme.primary }]}>
+              <Text
+                style={[
+                  styles.cancelText,
+                  { color: theme.primary },
+                ]}
+              >
                 Cancel Ride
               </Text>
             )}
@@ -526,9 +526,5 @@ const styles = StyleSheet.create({
   backButtonText: {
     fontSize: 16,
     fontWeight: "600",
-  },
-  map: {
-    width: Dimensions.get("window").width,
-    height: Dimensions.get("window").height,
   },
 });

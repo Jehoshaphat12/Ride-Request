@@ -1,5 +1,9 @@
+import CrossPlatformMap from "@/components/CrossPlatformMap";
 import { useTheme } from "@/contexts/ThemeContext";
+import { useCurrentLocation } from "@/hooks/useCurrentLocation";
+import { listenToRideUpdates } from "@/hooks/useRideListener";
 import { auth, db } from "@/lib/firebaseConfig";
+import { updateRiderLocation } from "@/services/rides";
 import { getUserProfile } from "@/services/users";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { Image } from "expo-image";
@@ -13,7 +17,7 @@ import {
   query,
   serverTimestamp,
   updateDoc,
-  where
+  where,
 } from "firebase/firestore";
 import { useEffect, useState } from "react";
 import {
@@ -21,27 +25,37 @@ import {
   Alert,
   Platform,
   SafeAreaView,
+  StatusBar,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
+import Loader from "../Loader";
 
 export default function RiderHomeScreen() {
   const [status, setStatus] = useState<"online" | "offline">("offline");
-  const { darkMode } = useTheme(); // Changed from theme to darkMode for consistency
+  const { theme, darkMode } = useTheme(); // Get theme from context
   const router = useRouter();
   const [rideRequest, setRideRequest] = useState<any | null>(null);
   const [loading, setLoading] = useState(false);
+  const [profilePic, setProfilePic] = useState("");
   const [updatingStatus, setUpdatingStatus] = useState(false);
+  const { location } = useCurrentLocation();
+  const [mounted, setMounted] = useState(false)
 
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
-  // FIXED: Check profile on mount to see if we should be on this screen
+  // Check profile on mount to see if we should be on this screen
   useEffect(() => {
     const checkProfile = async () => {
       try {
         const profile = await getUserProfile();
         if (!profile) return;
+
+        setProfilePic(profile.profilePicture);
 
         // Only navigate if we need to LEAVE the current screen
         if (profile.onboardingStatus === "incomplete") {
@@ -51,7 +65,6 @@ export default function RiderHomeScreen() {
         }
         // If status is "approved", stay here (no navigation)
         setLoading(false);
-
       } catch (err) {
         console.error("Error checking profile:", err);
         setLoading(false);
@@ -59,30 +72,7 @@ export default function RiderHomeScreen() {
     };
 
     checkProfile();
-  }, []); // Run once on mount
-
-
-  // Update rider online status in Firestore
-  useEffect(() => {
-    const updateRiderStatus = async () => {
-      if (!auth.currentUser) return;
-      
-      setUpdatingStatus(true);
-      try {
-        await updateDoc(doc(db, "users", auth.currentUser.uid), {
-          isOnline: status === "online",
-          lastOnline: serverTimestamp(),
-        });
-      } catch (error) {
-        console.error("Error updating rider status:", error);
-        Alert.alert("Error", "Failed to update status");
-      } finally {
-        setUpdatingStatus(false);
-      }
-    };
-
-    updateRiderStatus();
-  }, [status]);
+  }, []);
 
   // Listen for ride requests when online
   useEffect(() => {
@@ -95,23 +85,26 @@ export default function RiderHomeScreen() {
         limit(1)
       );
 
-      unsubscribe = onSnapshot(q, (snapshot) => {
-        if (!snapshot.empty) {
-          const doc = snapshot.docs[0];
-          setRideRequest({ 
-            id: doc.id, 
-            ...doc.data(),
-            // Add timestamp for UI
-            receivedAt: new Date().toLocaleTimeString()
-          });
-        } else {
-          setRideRequest(null);
+      unsubscribe = onSnapshot(
+        q,
+        (snapshot) => {
+          if (!snapshot.empty) {
+            const doc = snapshot.docs[0];
+            setRideRequest({
+              id: doc.id,
+              ...doc.data(),
+              // Add timestamp for UI
+              receivedAt: new Date().toLocaleTimeString(),
+            });
+          } else {
+            setRideRequest(null);
+          }
+        },
+        (error) => {
+          console.error("Error listening to ride requests:", error);
+          Alert.alert("Error", "Failed to load ride requests");
         }
-      }, (error) => {
-        console.error("Error listening to ride requests:", error);
-        Alert.alert("Error", "Failed to load ride requests");
-      });
-
+      );
     } else {
       setRideRequest(null);
     }
@@ -123,9 +116,17 @@ export default function RiderHomeScreen() {
     };
   }, [status]);
 
+  // Alert Rider of ride updates
+  useEffect(() => {
+    if(rideRequest) {
+      const unsub = listenToRideUpdates(rideRequest.id, "rider");
+      return () => unsub();
+    }
+  }, [rideRequest])
+
   const acceptRide = async () => {
     if (!rideRequest) return;
-    
+
     setLoading(true);
     try {
       const rider = auth.currentUser;
@@ -145,6 +146,8 @@ export default function RiderHomeScreen() {
           name: riderData.name || riderData.userName || "Rider",
           phone: riderData.phone || null,
           profilePicture: riderData.profilePicture || null,
+          rating: riderData.rating,
+          totalRides: riderData.totalRides,
           vehicle: riderData.vehicle || {
             model: "Unknown Model",
             color: "Unknown Color",
@@ -152,18 +155,17 @@ export default function RiderHomeScreen() {
           },
         },
         acceptedAt: serverTimestamp(),
-        // Remove from pending queries
-        // ... other fields you might want to update
       });
 
+      await updateRiderLocation(rideRequest.id, location?.coords.latitude!, location?.coords.longitude!)
+
       Alert.alert("Ride Accepted", "You've accepted the ride request! 🚗");
-      
+
       // Navigate to ride in progress screen or show directions
       router.push({
         pathname: "/(rider)/riderRideProgress",
-        params: { rideId: rideRequest.id }
+        params: { rideId: rideRequest.id },
       });
-
     } catch (error: any) {
       console.error("Error accepting ride:", error);
       Alert.alert("Error", error.message || "Failed to accept ride");
@@ -174,15 +176,19 @@ export default function RiderHomeScreen() {
 
   const ignoreRide = () => {
     setRideRequest(null);
-    // You might want to implement a proper ignore system
-    // that prevents the same ride from showing up again immediately
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: darkMode ? "#000" : "#fff" }]}>
-      
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: theme.background }]}
+    >
+      <StatusBar
+        barStyle={darkMode ? "light-content" : "dark-content"}
+        backgroundColor={theme.background}
+      />
+
       {/* Status Bar */}
-      <View style={styles.statusBar}>
+      <View style={[styles.statusBar, { backgroundColor: theme.card }]}>
         <View style={styles.headerLeft}>
           <Image
             source={require("../../assets/images/logo.png")}
@@ -193,63 +199,91 @@ export default function RiderHomeScreen() {
         <View style={styles.headerRight}>
           {/* Requests button */}
           <TouchableOpacity
-            style={styles.iconWrapper}
+            style={[styles.iconWrapper, { backgroundColor: theme.card }]}
             onPress={() => router.push("/(rider)/requestedRide")}
           >
-            <Ionicons name="list-outline" size={24} color={darkMode ? "#fff" : "#333"} />
+            <Ionicons name="list-outline" size={24} color={theme.text} />
           </TouchableOpacity>
 
           {/* Notifications */}
           <TouchableOpacity
-            style={styles.iconWrapper}
-            onPress={() => router.push("/(rider)/OnboardingScreen2")}
+            style={[styles.iconWrapper, { backgroundColor: theme.card }]}
+            onPress={() => router.push("/(rider)/notifications")}
           >
-            <Ionicons name="notifications-outline" size={24} color={darkMode ? "#fff" : "#333"} />
+            <Ionicons
+              name="notifications-outline"
+              size={24}
+              color={theme.text}
+            />
           </TouchableOpacity>
 
           {/* Profile */}
           <TouchableOpacity
-            style={styles.iconWrapper}
+            style={[styles.iconWrapper, { backgroundColor: theme.card }]}
             onPress={() => router.push("/(rider)/riderProfileSettings")}
           >
             <Image
               source={
-                auth.currentUser?.photoURL 
-                  ? { uri: auth.currentUser.photoURL }
+                profilePic
+                  ? { uri: profilePic }
                   : require("../../assets/images/defaultUserImg2.png")
               }
               style={styles.profilePic}
+              contentFit="cover"
             />
           </TouchableOpacity>
         </View>
       </View>
 
       {/* Map Placeholder */}
-      <View style={styles.mapPlaceholder}>
-        <Text style={{ color: darkMode ? "#ccc" : "#666", fontSize: 20 }}>
-          {status === "online" ? "🛵 Looking for rides..." : "📍 Map will be here"}
-        </Text>
+      <View style={[styles.mapPlaceholder, { backgroundColor: theme.card }]}>
+        {/* <Text style={[styles.mapText, { color: theme.text }]}>
+          🗺 Map View
+        </Text> */}
+
+        {!location || !mounted ? (
+          <Loader msg="Loading map..." />
+        ) : (
+          <CrossPlatformMap
+            latitude={location?.coords.latitude}
+            longitude={location?.coords.longitude}
+          />
+        )}
+
+        {/* Keeps rider’s location updating in Firestore */}
+        {/* <RiderLocationUpdater rideId={rideRequest} /> */}
       </View>
 
       {/* Status Toggle */}
-      <View style={[styles.statusContainer, { backgroundColor: darkMode ? "#1c1c1e" : "#fff" }]}>
-        <View style={styles.radioGroup}>
+      <View style={[styles.statusContainer, { backgroundColor: theme.card }]}>
+        <View style={[styles.radioGroup, { borderColor: theme.primary }]}>
           <TouchableOpacity
             style={[
               styles.radioButton,
-              status === "online" && styles.radioSelected,
-              updatingStatus && styles.radioDisabled
+              status === "online" && [
+                styles.radioSelected,
+                { backgroundColor: theme.primary },
+              ],
+              updatingStatus && styles.radioDisabled,
             ]}
-            onPress={() => setStatus("online")}
+            onPress={() => {
+              if (!updatingStatus) {
+                setStatus("online");
+              }
+            }}
             disabled={updatingStatus}
           >
             {updatingStatus && status === "online" ? (
-              <ActivityIndicator size="small" color="#fff" />
+              <ActivityIndicator size="small" color={theme.primaryText} />
             ) : (
-              <Text style={[
-                styles.radioText,
-                status === "online" && styles.radioTextSelected,
-              ]}>
+              <Text
+                style={[
+                  styles.radioText,
+                  status === "online"
+                    ? { color: theme.primaryText }
+                    : { color: theme.primary },
+                ]}
+              >
                 Online
               </Text>
             )}
@@ -258,19 +292,30 @@ export default function RiderHomeScreen() {
           <TouchableOpacity
             style={[
               styles.radioButton,
-              status === "offline" && styles.radioSelected,
-              updatingStatus && styles.radioDisabled
+              status === "offline" && [
+                styles.radioSelected,
+                { backgroundColor: theme.primary },
+              ],
+              updatingStatus && styles.radioDisabled,
             ]}
-            onPress={() => setStatus("offline")}
+            onPress={() => {
+              if (!updatingStatus) {
+                setStatus("offline");
+              }
+            }}
             disabled={updatingStatus}
           >
             {updatingStatus && status === "offline" ? (
-              <ActivityIndicator size="small" color="#fff" />
+              <ActivityIndicator size="small" color={theme.primaryText} />
             ) : (
-              <Text style={[
-                styles.radioText,
-                status === "offline" && styles.radioTextSelected,
-              ]}>
+              <Text
+                style={[
+                  styles.radioText,
+                  status === "offline"
+                    ? { color: theme.primaryText }
+                    : { color: theme.primary },
+                ]}
+              >
                 Offline
               </Text>
             )}
@@ -278,49 +323,69 @@ export default function RiderHomeScreen() {
         </View>
 
         {/* Status Indicator */}
-        <Text style={[styles.statusText, { color: darkMode ? "#ccc" : "#666" }]}>
-          {status === "online" ? "✅ Accepting ride requests" : "⏸️ Offline - not accepting rides"}
+        <Text style={[styles.statusText, { color: theme.muted }]}>
+          {status === "online"
+            ? "✅ Accepting ride requests"
+            : "⏸️ Offline - not accepting rides"}
         </Text>
 
         {/* Ride Request Card */}
         {status === "online" && rideRequest && (
-          <View style={[styles.card, { backgroundColor: darkMode ? "#2c2c2e" : "#fff" }]}>
-            <Text style={[styles.cardTitle, { color: darkMode ? "#fff" : "#000" }]}>
+          <View style={[styles.card, { backgroundColor: theme.background }]}>
+            <Text style={[styles.cardTitle, { color: theme.text }]}>
               🚖 New Ride Request
             </Text>
-            <Text style={[styles.cardTime, { color: darkMode ? "#ccc" : "#666" }]}>
+            <Text style={[styles.cardTime, { color: theme.muted }]}>
               Received at {rideRequest.receivedAt}
             </Text>
 
             <View style={styles.row}>
-              <Ionicons name="location-outline" size={20} color="#7500fc" />
-              <Text style={[styles.label, { color: darkMode ? "#fff" : "#333" }]}>Pickup:</Text>
-              <Text style={[styles.value, { color: darkMode ? "#ccc" : "#444" }]} numberOfLines={2}>
-                {rideRequest.pickup || "Current location"}
+              <Ionicons
+                name="location-outline"
+                size={20}
+                color={theme.primary}
+              />
+              <Text style={[styles.label, { color: theme.muted }]}>
+                Pickup:
+              </Text>
+              <Text
+                style={[styles.value, { color: theme.text }]}
+                numberOfLines={2}
+              >
+                {rideRequest.pickup?.address || "Current location"}
               </Text>
             </View>
 
             <View style={styles.row}>
-              <Ionicons name="flag-outline" size={20} color="#7500fc" />
-              <Text style={[styles.label, { color: darkMode ? "#fff" : "#333" }]}>Destination:</Text>
-              <Text style={[styles.value, { color: darkMode ? "#ccc" : "#444" }]} numberOfLines={2}>
-                {rideRequest.dropoff || "Unknown destination"}
+              <Ionicons name="flag-outline" size={20} color={theme.primary} />
+              <Text style={[styles.label, { color: theme.muted }]}>
+                Destination:
+              </Text>
+              <Text
+                style={[styles.value, { color: theme.text }]}
+                numberOfLines={2}
+              >
+                {rideRequest.dropoff?.address || "Unknown destination"}
               </Text>
             </View>
 
             <View style={styles.buttonRow}>
               <TouchableOpacity
-                style={[styles.ignoreBtn, { borderColor: darkMode ? "#555" : "#ccc" }]}
+                style={[styles.ignoreBtn, { borderColor: theme.border }]}
                 onPress={ignoreRide}
                 disabled={loading}
               >
-                <Text style={[styles.ignoreText, { color: darkMode ? "#ccc" : "#666" }]}>
+                <Text style={[styles.ignoreText, { color: theme.muted }]}>
                   Ignore
                 </Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={[styles.acceptBtn, loading && styles.acceptBtnDisabled]}
+                style={[
+                  styles.acceptBtn,
+                  { backgroundColor: theme.success },
+                  loading && styles.acceptBtnDisabled,
+                ]}
                 onPress={acceptRide}
                 disabled={loading}
               >
@@ -339,17 +404,16 @@ export default function RiderHomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { 
+  container: {
     flex: 1,
-    paddingTop: 15,
   },
   statusBar: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     paddingHorizontal: 16,
-    paddingTop: Platform.OS === 'ios' ? 10 : 16,
-    paddingBottom: 8,
+    paddingTop: Platform.OS === "ios" ? 10 : 45,
+    paddingBottom: 12,
   },
   headerLeft: {
     flexDirection: "row",
@@ -366,23 +430,25 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: "transparent",
   },
-  logo: { 
-    width: 40, 
-    height: 40, 
-    borderRadius: 20 
+  logo: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
   },
-  profilePic: { 
-    width: 36, 
-    height: 36, 
-    borderRadius: 18 
+  profilePic: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
   },
   mapPlaceholder: {
     flex: 1,
-    backgroundColor: "#e0e0e0",
     justifyContent: "center",
     alignItems: "center",
+  },
+  mapText: {
+    fontSize: 18,
+    fontWeight: "600",
   },
   statusContainer: {
     padding: 20,
@@ -404,7 +470,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "center",
     borderWidth: 2,
-    borderColor: "#7500fc",
     borderRadius: 30,
     padding: 4,
     marginBottom: 12,
@@ -418,18 +483,14 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   radioSelected: {
-    backgroundColor: "#7500fc",
+    // backgroundColor is set dynamically
   },
   radioDisabled: {
     opacity: 0.6,
   },
   radioText: {
     fontSize: 16,
-    color: "#7500fc",
     fontWeight: "600",
-  },
-  radioTextSelected: {
-    color: "#fff",
   },
   statusText: {
     fontSize: 14,
@@ -475,7 +536,7 @@ const styles = StyleSheet.create({
   value: {
     fontSize: 14,
     flex: 1,
-    flexWrap: 'wrap',
+    flexWrap: "wrap",
   },
   buttonRow: {
     flexDirection: "row",
@@ -497,7 +558,6 @@ const styles = StyleSheet.create({
     flex: 2,
     padding: 14,
     borderRadius: 12,
-    backgroundColor: "#28a745",
     alignItems: "center",
   },
   acceptBtnDisabled: {

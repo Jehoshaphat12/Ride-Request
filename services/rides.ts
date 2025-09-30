@@ -70,3 +70,13 @@ export async function updateRiderLocation(rideId: string, lat: number, lng: numb
     riderLocation: {lat, lng}
   })
 }
+
+// export async function updateRiderLocation(rideId: string, lat: number, lng: number) {
+//   const rideRef = doc(db, "rides", rideId)
+//   await updateDoc(rideRef, {
+//     riderLocation: {
+//       lat, lng,
+//       updatedAt: new Date()
+//     }
+//   })
+// }

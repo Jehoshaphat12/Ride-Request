@@ -15,6 +15,7 @@ import { useEffect, useState } from "react";
 import {
   FlatList,
   SafeAreaView,
+  StatusBar,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -22,10 +23,8 @@ import {
 } from "react-native";
 
 export default function IncomingRideScreen() {
-  const { darkMode } = useTheme();
-
+  const { theme, darkMode } = useTheme(); // Get theme from context
   const router = useRouter();
-
   const [requests, setRequests] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -49,12 +48,39 @@ export default function IncomingRideScreen() {
       const rideRef = doc(db, "rides", rideId);
       await updateDoc(rideRef, {
         status: "accepted",
-        rideId: auth.currentUser.uid,
+        riderId: auth.currentUser.uid,
+      });
+      
+      // Navigate to ride progress screen after accepting
+      router.push({
+        pathname: "/(rider)/riderRideProgress",
+        params: { rideId }
       });
     } catch (err) {
       console.error("Error accepting ride:", err);
     }
   };
+
+  // // Helper function to safely extract address text
+  // const getAddressText = (address: any): string => {
+  //   if (!address) return "Location not specified";
+    
+  //   // If address is a string, return it directly
+  //   if (typeof address === 'string') return address;
+    
+  //   // If address is an object, try to extract meaningful text
+  //   if (typeof address === 'object') {
+  //     if (address.address) return address.address;
+  //     if (address.formattedAddress) return address.formattedAddress;
+  //     if (address.street && address.city) return `${address.street}, ${address.city}`;
+  //     if (address.name) return address.name;
+      
+  //     // If it's a complex object, stringify it (fallback)
+  //     return "Location details available";
+  //   }
+    
+  //   return "Location not specified";
+  // };
 
   if (loading) {
     return <Loader msg="Request Loading..." />;
@@ -62,9 +88,17 @@ export default function IncomingRideScreen() {
 
   if (requests.length === 0) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+        <StatusBar 
+          barStyle={darkMode ? "light-content" : "dark-content"} 
+          backgroundColor={theme.background}
+        />
+        
         {/* Header with Back Button */}
-        <View style={styles.navheader}>
+        <View style={[styles.navheader, { 
+          borderBottomColor: theme.border,
+          backgroundColor: theme.card 
+        }]}>
           <TouchableOpacity
             style={styles.backButton}
             onPress={() => router.back()}
@@ -72,28 +106,40 @@ export default function IncomingRideScreen() {
             <Ionicons
               name="arrow-back"
               size={24}
-              color={darkMode ? "#fff" : "#000"}
+              color={theme.text}
             />
           </TouchableOpacity>
-          <Text
-            style={[styles.headerTitle, { color: darkMode ? "#fff" : "#000" }]}
-          >
+          <Text style={[styles.headerTitle, { color: theme.text }]}>
             Ride Requests
           </Text>
           <View style={styles.headerSpacer} />
         </View>
 
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>No ride requests right now 🚘</Text>
+          <Ionicons name="car-outline" size={64} color={theme.muted} />
+          <Text style={[styles.emptyText, { color: theme.muted }]}>
+            No ride requests right now 🚘
+          </Text>
+          <Text style={[styles.emptySubtext, { color: theme.muted }]}>
+            New ride requests will appear here
+          </Text>
         </View>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+      <StatusBar 
+        barStyle={darkMode ? "light-content" : "dark-content"} 
+        backgroundColor={theme.background}
+      />
+      
       {/* Header with Back Button */}
-      <View style={styles.navheader}>
+      <View style={[styles.navheader, { 
+        borderBottomColor: theme.border,
+        backgroundColor: theme.card 
+      }]}>
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => router.back()}
@@ -101,29 +147,61 @@ export default function IncomingRideScreen() {
           <Ionicons
             name="arrow-back"
             size={24}
-            color={darkMode ? "#fff" : "#000"}
+            color={theme.text}
           />
         </TouchableOpacity>
-        <Text
-          style={[styles.headerTitle, { color: darkMode ? "#fff" : "#000" }]}
-        >
-          Ride Requests
+        <Text style={[styles.headerTitle, { color: theme.text }]}>
+          Ride Requests ({requests.length})
         </Text>
         <View style={styles.headerSpacer} />
       </View>
+      
       <FlatList
         data={requests}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={{ padding: 16 }}
+        contentContainerStyle={styles.listContainer}
         renderItem={({ item }) => (
-          <View style={styles.card}>
-            <Text style={styles.title}>Pickup: {item.pickup}</Text>
-            <Text style={styles.title}>Destination: {item.dropoff}</Text>
+          <View style={[styles.card, { backgroundColor: theme.card }]}>
+            <View style={styles.cardHeader}>
+              <Ionicons name="person-circle-outline" size={24} color={theme.primary} />
+              <Text style={[styles.passengerText, { color: theme.text }]}>
+                Passenger Request
+              </Text>
+            </View>
+            
+            <View style={styles.detailRow}>
+              <Ionicons name="location-outline" size={20} color={theme.primary} />
+              <Text style={[styles.label, { color: theme.muted }]}>Pickup:</Text>
+              <Text style={[styles.value, { color: theme.text }]} numberOfLines={2}>
+                {item.pickup.address}
+              </Text>
+            </View>
+
+            <View style={styles.detailRow}>
+              <Ionicons name="flag-outline" size={20} color={theme.primary} />
+              <Text style={[styles.label, { color: theme.muted }]}>Destination:</Text>
+              <Text style={[styles.value, { color: theme.text }]} numberOfLines={2}>
+                {item.dropoff.address}
+              </Text>
+            </View>
+
+            {item.fare && (
+              <View style={styles.detailRow}>
+                <Ionicons name="cash-outline" size={20} color={theme.primary} />
+                <Text style={[styles.label, { color: theme.muted }]}>Fare:</Text>
+                <Text style={[styles.value, { color: theme.text }]}>
+                  GHS {typeof item.fare === 'number' ? item.fare.toFixed(2) : item.fare}
+                </Text>
+              </View>
+            )}
+
             <TouchableOpacity
-              style={styles.button}
+              style={[styles.button, { backgroundColor: theme.primary }]}
               onPress={() => acceptRide(item.id)}
             >
-              <Text style={styles.buttonText}>Accept Ride</Text>
+              <Text style={[styles.buttonText, { color: theme.primaryText }]}>
+                Accept Ride
+              </Text>
             </TouchableOpacity>
           </View>
         )}
@@ -135,120 +213,19 @@ export default function IncomingRideScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
-    paddingTop: 10,
   },
-  mapPlaceholder: {
-    flex: 1,
-    backgroundColor: "#e0e0e0",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  requestCard: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: "#bbb",
-    padding: 20,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    elevation: 10,
-    shadowColor: "#000",
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
-  },
-  passengerRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 16,
-    gap: 12,
-  },
-  profilePic: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-  },
-  passengerName: {
-    fontSize: 18,
-    fontWeight: "600",
-  },
-  passengerRating: {
-    fontSize: 14,
-    color: "#666",
-  },
-  row: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 10,
-  },
-  label: {
-    fontWeight: "600",
-    marginLeft: 6,
-    marginRight: 4,
-    fontSize: 16,
-  },
-  value: {
-    fontSize: 16,
-    color: "#444",
-    flexShrink: 1,
-  },
-  actions: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: 20,
-  },
-  btn: {
-    flex: 1,
-    marginHorizontal: 6,
-    paddingVertical: 14,
-    borderRadius: 12,
-    alignItems: "center",
-  },
-  btnText: {
-    color: "#fff",
-    fontWeight: "600",
-    fontSize: 16,
-  },
-  card: {
-    backgroundColor: "#fff",
+  listContainer: {
     padding: 16,
-    borderRadius: 12,
-    marginBottom: 12,
-    elevation: 2,
+    paddingBottom: 20,
   },
-  title: {
-    fontSize: 16,
-    marginBottom: 8,
-  },
-  button: {
-    backgroundColor: "#7500fc",
-    paddingVertical: 10,
-    borderRadius: 8,
-    alignItems: "center",
-  },
-  buttonText: {
-    color: "#fff",
-    fontWeight: "600",
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  emptyText: {
-    fontSize: 18,
-    color: "#666",
-  },
-
   navheader: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 15,
+    paddingTop: 45,
     borderBottomWidth: 1,
-    borderBottomColor: "#eee",
   },
   backButton: {
     padding: 8,
@@ -258,6 +235,75 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   headerSpacer: {
-    width: 40, // Same as back button for balance
+    width: 40,
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  emptyText: {
+    fontSize: 18,
+    fontWeight: "600",
+    marginTop: 16,
+    marginBottom: 8,
+    textAlign: "center",
+  },
+  emptySubtext: {
+    fontSize: 14,
+    textAlign: "center",
+    color: "#666",
+  },
+  card: {
+    padding: 20,
+    borderRadius: 16,
+    marginBottom: 16,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  cardHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 16,
+    gap: 8,
+  },
+  passengerText: {
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  detailRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    marginBottom: 12,
+    paddingVertical: 4,
+  },
+  label: {
+    fontWeight: "600",
+    marginLeft: 8,
+    marginRight: 4,
+    fontSize: 14,
+    minWidth: 80,
+  },
+  value: {
+    fontSize: 14,
+    flex: 1,
+    flexWrap: 'wrap',
+  },
+  button: {
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: "center",
+    marginTop: 8,
+  },
+  buttonText: {
+    fontSize: 16,
+    fontWeight: "600",
   },
 });

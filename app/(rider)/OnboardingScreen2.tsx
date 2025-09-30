@@ -33,7 +33,7 @@ export default function RiderOnboardingScreen() {
   const [licenseImage, setLicenseImage] = useState<string | any | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // Upload image to Firebase Storage
+  // Upload image to Supabase Storage
  const uploadImage = async (uri: string, path: string, userId: string): Promise<string> => {
   try {
     // Convert URI → Blob (works with expo-image-picker)

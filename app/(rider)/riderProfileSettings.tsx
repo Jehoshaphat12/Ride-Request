@@ -1,5 +1,4 @@
 import { useTheme } from "@/contexts/ThemeContext";
-import { darkTheme } from "@/hooks/theme";
 import { auth } from "@/lib/firebaseConfig";
 import { getUserProfile } from "@/services/users";
 import Ionicons from "@expo/vector-icons/Ionicons";
@@ -10,6 +9,7 @@ import { useEffect, useState } from "react";
 import {
   SafeAreaView,
   ScrollView,
+  StatusBar,
   StyleSheet,
   Switch,
   Text,
@@ -18,16 +18,14 @@ import {
 } from "react-native";
 
 export default function RiderProfileScreen() {
-  //   const [darkMode, setDarkMode] = useState(false);
-  const router = useRouter()
+  const router = useRouter();
+  const { theme, darkMode, toggleDarkMode } = useTheme(); // Get theme from context
   const [userName, setUserName] = useState("");
   const [profilePic, setProfilePic] = useState("");
   const [vehicleDetails, setVehicleDetails] = useState({
     model: "",
     plateNumber: "",
   });
-  const { darkMode, toggleDarkMode } = useTheme();
-  const userProfile = getUserProfile();
 
   useEffect(() => {
     const getUserDetails = async () => {
@@ -35,7 +33,7 @@ export default function RiderProfileScreen() {
 
       if (!profile) return;
 
-      setUserName(profile.name);
+      setUserName(profile.userName);
       setProfilePic(profile.profilePicture);
       setVehicleDetails(profile.vehicle);
     };
@@ -47,8 +45,7 @@ export default function RiderProfileScreen() {
     try {
       await signOut(auth);
       console.log("User signed out successfully!");
-      // Navigate the user to the login screen or another appropriate screen
-      // using your navigation library (e.g., React Navigation)
+      router.replace("/");
     } catch (error) {
       console.error("Error signing out:", error);
     }
@@ -56,51 +53,76 @@ export default function RiderProfileScreen() {
 
   return (
     <SafeAreaView
-      style={[styles.container, darkMode && { backgroundColor: "#121212" }]}
+      style={[styles.container, { backgroundColor: theme.background }]}
     >
+      <StatusBar
+        barStyle={darkMode ? "light-content" : "dark-content"}
+        backgroundColor={theme.background}
+      />
+
       {/* Header with Back Button */}
-    <View style={styles.navheader}>
-      <TouchableOpacity 
-        style={styles.backButton}
-        onPress={() => router.back()}
+      <View
+        style={[
+          styles.navheader,
+          {
+            borderBottomColor: theme.border,
+            backgroundColor: theme.card,
+          },
+        ]}
       >
-        <Ionicons 
-          name="arrow-back" 
-          size={24} 
-          color={darkMode ? "#fff" : "#000"} 
-        />
-      </TouchableOpacity>
-      <Text style={[
-        styles.headerTitle, 
-        { color: darkMode ? "#fff" : "#000" }
-      ]}>
-        Settings
-      </Text>
-      <View style={styles.headerSpacer} />
-    </View>
-      <ScrollView contentContainerStyle={{ padding: 16 }}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => router.back()}
+        >
+          <Ionicons name="arrow-back" size={24} color={theme.text} />
+        </TouchableOpacity>
+        <Text style={[styles.headerTitle, { color: theme.text }]}>
+          Settings
+        </Text>
+        <View style={styles.headerSpacer} />
+      </View>
+
+      <ScrollView contentContainerStyle={styles.scrollContainer}>
         {/* Profile Header */}
         <View
           style={[
             styles.header,
-            darkMode && { backgroundColor: "#1e1e1e", borderColor: "#333" },
+            {
+              backgroundColor: theme.card,
+              borderColor: theme.border,
+            },
           ]}
         >
           <Image
-            source={profilePic ? {uri: profilePic} : require("../../assets/images/defaultUserImg.png")}
+            source={
+              profilePic
+                ? { uri: profilePic }
+                : require("../../assets/images/defaultUserImg.png")
+            }
             style={styles.profilePic}
+            contentFit="cover"
           />
-          <View style={{ marginLeft: 12 }}>
-            <Text style={[styles.name, darkMode && { color: "#fff" }]}>
-              {userName}
-            </Text>
-            <Text style={[styles.vehicle, darkMode && { color: "#aaa" }]}>
+          <View style={styles.userInfo}>
+            <Text style={[styles.name, { color: theme.text }]}>{userName}</Text>
+            <Text style={[styles.vehicle, { color: theme.muted }]}>
               {vehicleDetails.model} • {vehicleDetails.plateNumber}
             </Text>
+            <Text style={[styles.role, { color: theme.muted }]}>
+              Rider Account
+            </Text>
           </View>
-          <TouchableOpacity style={styles.editBtn}>
-            <Ionicons name="create-outline" size={18} color="#fff" />
-            <Text style={styles.editText}>Edit</Text>
+          <TouchableOpacity
+            style={[styles.editBtn, { backgroundColor: theme.primary }]}
+            onPress={() => router.push("/(rider)/editProfile")}
+          >
+            <Ionicons
+              name="create-outline"
+              size={18}
+              color={theme.primaryText}
+            />
+            <Text style={[styles.editText, { color: theme.primaryText }]}>
+              Edit
+            </Text>
           </TouchableOpacity>
         </View>
 
@@ -108,84 +130,141 @@ export default function RiderProfileScreen() {
         <View
           style={[
             styles.section,
-            darkMode && { backgroundColor: "#1e1e1e", borderColor: "#333" },
+            {
+              backgroundColor: theme.card,
+              borderColor: theme.border,
+            },
           ]}
         >
-          <OptionRow
+          {/* <OptionRow
             icon="person-outline"
             label="Account Info"
-            darkMode={darkMode}
-          />
+            theme={theme}
+            onPress={() => router.push("/(rider)/riderHome")}
+          /> */}
           <OptionRow
             icon="bicycle-outline"
             label="Vehicle Info"
-            darkMode={darkMode}
-          />
+            theme={theme}
+            onPress={() => router.push("/(rider)/riderHome")}
+          /> 
           <OptionRow
             icon="time-outline"
             label="Ride History"
-            darkMode={darkMode}
+            theme={theme}
+            onPress={() => router.push("/(rider)/rideHistory")}
           />
-          <OptionRow icon="cash-outline" label="Earnings" darkMode={darkMode} />
+          <OptionRow
+            icon="cash-outline"
+            label="Earnings"
+            theme={theme}
+            onPress={() => router.push("/(rider)/riderHome")}
+          />
           <OptionRow
             icon="wallet-outline"
             label="Payment Setup"
-            darkMode={darkMode}
+            theme={theme}
+            onPress={() => router.push("/(rider)/riderHome")}
           />
           <OptionRow
             icon="help-circle-outline"
             label="Help & Support"
-            darkMode={darkMode}
+            theme={theme}
+            onPress={() => router.push("/(rider)/riderHome")}
           />
 
           {/* Dark Mode Toggle */}
-          <View style={styles.row}>
-            <Ionicons name="moon-outline" size={22} color="#7500fc" />
-            <Text style={[styles.rowText, darkMode && { color: "#fff" }]}>
-              Dark Mode
-            </Text>
+          <View style={[styles.row, { borderBottomWidth: 0 }]}>
+            <View style={styles.rowContent}>
+              <Ionicons
+                name={darkMode ? "moon" : "moon-outline"}
+                size={22}
+                color={theme.primary}
+              />
+              <Text style={[styles.rowText, { color: theme.text }]}>
+                Dark Mode
+              </Text>
+            </View>
             <Switch
               value={darkMode}
               onValueChange={toggleDarkMode}
-              thumbColor={darkMode ? "#7500fc" : "#f4f3f4"}
-              trackColor={{ false: "#ccc", true: "#a580ff" }}
+              thumbColor={darkMode ? theme.primary : "#f4f3f4"}
+              trackColor={{ false: "#767577", true: theme.primary + "80" }}
+              ios_backgroundColor="#3e3e3e"
             />
           </View>
         </View>
 
-        {/* Logout */}
-        <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
+        {/* Additional Settings Section */}
+        <View
+          style={[
+            styles.section,
+            {
+              backgroundColor: theme.card,
+              borderColor: theme.border,
+            },
+          ]}
+        >
+          <OptionRow
+            icon="shield-checkmark-outline"
+            label="Privacy & Security"
+            theme={theme}
+            onPress={() => router.push("/(rider)/riderHome")}
+          />
+          <OptionRow
+            icon="language-outline"
+            label="Language"
+            theme={theme}
+            onPress={() => router.push("/(rider)/riderHome")}
+          />
+          <OptionRow
+            icon="information-circle-outline"
+            label="About App"
+            theme={theme}
+            onPress={() => router.push("/(rider)/riderHome")}
+          />
+        </View>
+
+        {/* Logout Button */}
+        <TouchableOpacity
+          style={[styles.logoutBtn, { backgroundColor: theme.danger }]}
+          onPress={handleLogout}
+        >
           <Ionicons name="log-out-outline" size={22} color="#fff" />
           <Text style={styles.logoutText}>Logout</Text>
         </TouchableOpacity>
+
+        {/* App Version */}
+        <Text style={[styles.versionText, { color: theme.muted }]}>
+          Version 1.0.0
+        </Text>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-// Reusable row
+// Reusable row component
 function OptionRow({
   icon,
   label,
-  darkMode,
+  theme,
+  onPress,
 }: {
   icon: any;
   label: string;
-  darkMode?: boolean;
+  theme: any;
+  onPress?: () => void;
 }) {
   return (
     <TouchableOpacity
-      style={[styles.row, darkMode && { borderColor: darkTheme.border }]}
+      style={[styles.row, { borderBottomColor: theme.border }]}
+      onPress={onPress}
     >
-      <Ionicons name={icon} size={22} color="#7500fc" />
-      <Text style={[styles.rowText, darkMode && { color: "#fff" }]}>
-        {label}
-      </Text>
-      <Ionicons
-        name="chevron-forward"
-        size={20}
-        color={darkMode ? "#aaa" : "#999"}
-      />
+      <View style={styles.rowContent}>
+        <Ionicons name={icon} size={22} color={theme.primary} />
+        <Text style={[styles.rowText, { color: theme.text }]}>{label}</Text>
+      </View>
+      <Ionicons name="chevron-forward" size={20} color={theme.muted} />
     </TouchableOpacity>
   );
 }
@@ -193,91 +272,19 @@ function OptionRow({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
   },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#f8f6ff",
-    borderRadius: 12,
+  scrollContainer: {
     padding: 16,
-    marginBottom: 24,
-    borderWidth: 1,
-    borderColor: "#eee",
+    paddingBottom: 30,
   },
-  profilePic: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-  },
-  name: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: "#333",
-  },
-  vehicle: {
-    fontSize: 12,
-    color: "#666",
-    marginTop: 4,
-  },
-  editBtn: {
-    marginLeft: "auto",
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#7500fc",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
-  },
-  editText: {
-    color: "#fff",
-    marginLeft: 4,
-    fontWeight: "600",
-  },
-  section: {
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#eee",
-    marginBottom: 24,
-  },
-  row: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#eee",
-  },
-  rowText: {
-    flex: 1,
-    fontSize: 16,
-    marginLeft: 12,
-    color: "#333",
-  },
-  logoutBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#ff3b30",
-    paddingVertical: 14,
-    borderRadius: 12,
-  },
-  logoutText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "600",
-    marginLeft: 6,
-  },
-
   navheader: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 15,
+    paddingTop: 45,
     borderBottomWidth: 1,
-    borderBottomColor: "#eee",
   },
   backButton: {
     padding: 8,
@@ -287,6 +294,93 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   headerSpacer: {
-    width: 40, // Same as back button for balance
+    width: 40,
+  },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 24,
+    borderWidth: 1,
+  },
+  profilePic: {
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    backgroundColor: "#eee",
+  },
+  userInfo: {
+    flex: 1,
+    marginLeft: 16,
+  },
+  name: {
+    fontSize: 18,
+    fontWeight: "700",
+    marginBottom: 2,
+  },
+  vehicle: {
+    fontSize: 13,
+  },
+  role: {
+    fontSize: 13,
+    fontStyle: "italic",
+  },
+  editBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    marginLeft: 12,
+  },
+  editText: {
+    marginLeft: 4,
+    fontWeight: "600",
+    fontSize: 14,
+  },
+  section: {
+    borderRadius: 16,
+    borderWidth: 1,
+    marginBottom: 20,
+    overflow: "hidden",
+  },
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderBottomWidth: 1,
+    minHeight: 56,
+  },
+  rowContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+  },
+  rowText: {
+    fontSize: 16,
+    marginLeft: 12,
+    fontWeight: "500",
+  },
+  logoutBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 16,
+    borderRadius: 12,
+    marginBottom: 20,
+  },
+  logoutText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "600",
+    marginLeft: 8,
+  },
+  versionText: {
+    textAlign: "center",
+    fontSize: 12,
+    marginTop: 8,
   },
 });
