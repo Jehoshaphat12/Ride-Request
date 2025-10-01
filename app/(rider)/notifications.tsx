@@ -17,13 +17,13 @@ import {
   Easing,
   FlatList,
   Platform,
+  Pressable,
   SafeAreaView,
   StatusBar,
   StyleSheet,
   Text,
   TouchableOpacity,
-  TouchableWithoutFeedback,
-  View,
+  View
 } from "react-native";
 
 export default function NotificationsScreen() {
@@ -187,9 +187,9 @@ export default function NotificationsScreen() {
 
       {/* Overlay to detect outside tap */}
       {dropdownVisible && (
-        <TouchableWithoutFeedback onPress={() => setDropdownVisible(false)}>
+        <Pressable onPress={() => setDropdownVisible(false)}>
           <View style={styles.overlay} />
-        </TouchableWithoutFeedback>
+        </Pressable>
       )}
 
       {/* Header with Back Button */}

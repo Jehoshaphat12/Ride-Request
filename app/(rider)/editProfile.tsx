@@ -9,17 +9,17 @@ import { useRouter } from "expo-router";
 import { doc, serverTimestamp, setDoc } from "firebase/firestore";
 import { useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    KeyboardAvoidingView,
-    Linking,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  KeyboardAvoidingView,
+  Linking,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -28,6 +28,8 @@ export default function EditProfileScreen() {
   const user = auth.currentUser;
   const router = useRouter();
   const [userName, setUserName] = useState(user?.displayName || "");
+  const [userEmail, setUserEmail] = useState(user?.email || "")
+  const [userContact, setUserContact] = useState(user?.phoneNumber || "")
   const [profilePic, setProfilePic] = useState<string | any | null>(
     user?.photoURL || ""
   );
@@ -42,6 +44,8 @@ export default function EditProfileScreen() {
 
       setUserName(profile.userName || "");
       setProfilePic(profile.profilePicture || "");
+      setUserEmail(profile.email || "")
+      setUserContact(profile.phone || "")
     };
     fetchUserProfile();
   }, []);
@@ -123,6 +127,8 @@ export default function EditProfileScreen() {
         {
           uid: user.uid,
           userName,
+          email: userEmail,
+          phone: userContact,
           profilePicture: profilePicUrl,
           EditedDate: serverTimestamp(),
         },
@@ -261,6 +267,34 @@ export default function EditProfileScreen() {
             placeholderTextColor={"#666"}
             value={userName}
             onChangeText={setUserName}
+          />
+          <TextInput
+            style={[
+              styles.input,
+              {
+                backgroundColor: theme.card,
+                color: theme.text,
+                borderColor: theme.border,
+              },
+            ]}
+            placeholder="Email"
+            placeholderTextColor={"#666"}
+            value={userEmail}
+            onChangeText={setUserEmail}
+          />
+          <TextInput
+            style={[
+              styles.input,
+              {
+                backgroundColor: theme.card,
+                color: theme.text,
+                borderColor: theme.border,
+              },
+            ]}
+            placeholder="Contact"
+            placeholderTextColor={"#666"}
+            value={userContact}
+            onChangeText={setUserContact}
           />
 
           {/* Submit Button */}

@@ -2,7 +2,6 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { auth } from "@/lib/firebaseConfig";
 import { getUserProfile } from "@/services/users";
 import Ionicons from "@expo/vector-icons/Ionicons";
-import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import { signOut } from "firebase/auth";
 import { useEffect, useState } from "react";
@@ -11,10 +10,9 @@ import {
   ScrollView,
   StatusBar,
   StyleSheet,
-  Switch,
   Text,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
 
 export default function RiderProfileScreen() {
@@ -22,6 +20,9 @@ export default function RiderProfileScreen() {
   const { theme, darkMode, toggleDarkMode } = useTheme(); // Get theme from context
   const [userName, setUserName] = useState("");
   const [profilePic, setProfilePic] = useState("");
+  const [userEmail, setUserEmail] = useState("")
+  const [userContact, setUserContact] = useState("")
+  const [userRole, setUserRole] = useState("")
   const [vehicleDetails, setVehicleDetails] = useState({
     model: "",
     plateNumber: "",
@@ -36,6 +37,9 @@ export default function RiderProfileScreen() {
       setUserName(profile.userName);
       setProfilePic(profile.profilePicture);
       setVehicleDetails(profile.vehicle);
+      setUserEmail(profile.email)
+      setUserContact(profile.phone)
+      setUserRole(profile.role)
     };
     getUserDetails();
   }, []);
@@ -77,13 +81,13 @@ export default function RiderProfileScreen() {
           <Ionicons name="arrow-back" size={24} color={theme.text} />
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: theme.text }]}>
-          Settings
+          Account Info.
         </Text>
         <View style={styles.headerSpacer} />
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContainer}>
-        {/* Profile Header */}
+        {/* Profile Header
         <View
           style={[
             styles.header,
@@ -124,7 +128,7 @@ export default function RiderProfileScreen() {
               Edit
             </Text>
           </TouchableOpacity>
-        </View>
+        </View> */}
 
         {/* Settings Options */}
         <View
@@ -138,105 +142,44 @@ export default function RiderProfileScreen() {
         >
           <OptionRow
             icon="person-outline"
-            label="Account Info"
+            label="UserName"
             theme={theme}
-            onPress={() => router.push("/(rider)/accountInfo")}
+            value={userName}
           />
           <OptionRow
-            icon="bicycle-outline"
-            label="Vehicle Info"
+            icon="at-outline"
+            label="Email"
+            value={userEmail}
             theme={theme}
-            onPress={() => router.push("/(rider)/vehicleInfo")}
-          /> 
+          />
           <OptionRow
-            icon="time-outline"
-            label="Ride History"
+            icon="number"
+            label="Contact"
+            value={userContact}
             theme={theme}
-            onPress={() => router.push("/(rider)/rideHistory")}
           />
           <OptionRow
             icon="cash-outline"
-            label="Earnings"
+            label="Account Type"
+            value={userRole === "rider" ? "Rider" : "Passenger"}
             theme={theme}
-            onPress={() => router.push("/(rider)/riderHome")}
           />
-          <OptionRow
-            icon="wallet-outline"
-            label="Payment Setup"
-            theme={theme}
-            onPress={() => router.push("/(rider)/riderHome")}
-          />
-          <OptionRow
-            icon="help-circle-outline"
-            label="Help & Support"
-            theme={theme}
-            onPress={() => router.push("/(rider)/riderHome")}
-          />
-
-          {/* Dark Mode Toggle */}
-          <View style={[styles.row, { borderBottomWidth: 0 }]}>
-            <View style={styles.rowContent}>
-              <Ionicons
-                name={darkMode ? "moon" : "moon-outline"}
-                size={22}
-                color={theme.primary}
-              />
-              <Text style={[styles.rowText, { color: theme.text }]}>
-                Dark Mode
-              </Text>
-            </View>
-            <Switch
-              value={darkMode}
-              onValueChange={toggleDarkMode}
-              thumbColor={darkMode ? theme.primary : "#f4f3f4"}
-              trackColor={{ false: "#767577", true: theme.primary + "80" }}
-              ios_backgroundColor="#3e3e3e"
-            />
-          </View>
+          
         </View>
 
-        {/* Additional Settings Section */}
-        <View
-          style={[
-            styles.section,
-            {
-              backgroundColor: theme.card,
-              borderColor: theme.border,
-            },
-          ]}
-        >
-          <OptionRow
-            icon="shield-checkmark-outline"
-            label="Privacy & Security"
-            theme={theme}
-            onPress={() => router.push("/(rider)/riderHome")}
-          />
-          <OptionRow
-            icon="language-outline"
-            label="Language"
-            theme={theme}
-            onPress={() => router.push("/(rider)/riderHome")}
-          />
-          <OptionRow
-            icon="information-circle-outline"
-            label="About App"
-            theme={theme}
-            onPress={() => router.push("/(rider)/riderHome")}
-          />
-        </View>
-
-        {/* Logout Button */}
+       
+        {/* Edit Account Info Button */}
         <TouchableOpacity
-          style={[styles.logoutBtn, { backgroundColor: theme.danger }]}
-          onPress={handleLogout}
+          style={[styles.logoutBtn, { backgroundColor: theme.primary }]}
+          onPress={() => router.push("/(rider)/editProfile")}
         >
-          <Ionicons name="log-out-outline" size={22} color="#fff" />
-          <Text style={styles.logoutText}>Logout</Text>
+          <Ionicons name="create-outline" size={22} color="#fff" />
+          <Text style={styles.logoutText}>Edit Account</Text>
         </TouchableOpacity>
 
         {/* App Version */}
         <Text style={[styles.versionText, { color: theme.muted }]}>
-          RideRequest V1.0.0
+          Version 1.0.0
         </Text>
       </ScrollView>
     </SafeAreaView>
@@ -247,25 +190,22 @@ export default function RiderProfileScreen() {
 function OptionRow({
   icon,
   label,
+  value,
   theme,
-  onPress,
 }: {
   icon: any;
   label: string;
+  value: string;
   theme: any;
-  onPress?: () => void;
 }) {
   return (
-    <TouchableOpacity
-      style={[styles.row, { borderBottomColor: theme.border }]}
-      onPress={onPress}
-    >
+    <View style={[styles.row, { borderBottomColor: theme.border }]}>
       <View style={styles.rowContent}>
         <Ionicons name={icon} size={22} color={theme.primary} />
         <Text style={[styles.rowText, { color: theme.text }]}>{label}</Text>
       </View>
-      <Ionicons name="chevron-forward" size={20} color={theme.muted} />
-    </TouchableOpacity>
+      <Text style={[styles.rowTextValue, { color: theme.muted }]}>{value}</Text>
+    </View>
   );
 }
 
@@ -346,7 +286,7 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   row: {
-    flexDirection: "row",
+    flexDirection: "column",
     alignItems: "center",
     justifyContent: "space-between",
     paddingVertical: 16,
@@ -363,6 +303,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginLeft: 12,
     fontWeight: "500",
+  },
+  rowTextValue: {
+    fontSize: 15,
   },
   logoutBtn: {
     flexDirection: "row",

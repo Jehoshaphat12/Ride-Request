@@ -11,6 +11,8 @@ Notifications.setNotificationHandler({
     shouldShowAlert: true,   // show pop-up
     shouldPlaySound: true,   // play sound
     shouldSetBadge: false,   // iOS app badge
+    shouldShowBanner: true,
+    shouldShowList: true
   }),
 });
 

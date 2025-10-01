@@ -104,7 +104,7 @@ export default function RiderHomeScreen() {
               "ride_request",
               "New Ride Request 🚖",
               "A passenger is requesting a ride near your area",
-              rideRequest?.uid
+              rideRequest?.id
             );
           } else {
             setRideRequest(null);

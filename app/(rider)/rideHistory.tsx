@@ -3,22 +3,22 @@ import { auth, db } from "@/lib/firebaseConfig";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useRouter } from "expo-router";
 import {
-    collection,
-    onSnapshot,
-    orderBy,
-    query,
-    where,
+  collection,
+  onSnapshot,
+  orderBy,
+  query,
+  where,
 } from "firebase/firestore";
 import { useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    FlatList,
-    SafeAreaView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  ActivityIndicator,
+  FlatList,
+  SafeAreaView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from "react-native";
 
 type Ride = {
@@ -300,6 +300,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 16,
     paddingVertical: 14,
+    paddingTop: 45,
     borderBottomWidth: 1,
     justifyContent: "space-between",
   },

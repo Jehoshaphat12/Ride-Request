@@ -144,12 +144,12 @@ export default function PassengerProfileScreen() {
             },
           ]}
         >
-          {/* <OptionRow
+          <OptionRow
             icon="person-outline"
             label="Account Info"
             theme={theme}
-            onPress={() => router.push("/(passenger)/passengerScreen")}
-          /> */}
+            onPress={() => router.push("/(passenger)/accountInfo")}
+          />
           <OptionRow
             icon="time-outline"
             label="Ride History"
